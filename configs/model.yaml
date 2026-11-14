@@ -1,0 +1,26 @@
+graph:
+  alpha: 0.7          # weight on NPMI (1-alpha on chemical Jaccard)
+  top_k: 50           # max neighbors kept per ingredient after fusion
+  min_cooccur: 2      # min co-occurrence count for NPMI edges
+
+model:
+  emb_dim: 64
+  n_layers: 3         # L in LightGCN
+  n_groups: 2         # G ≤ L contrastive view groups (prefer lower layers)
+  temperature: 0.2
+  scope: heterogeneous
+
+train:
+  epochs: 40
+  batch_size: 4096
+  lr: 0.001
+  lambda_cl: 1.0e-5   # weight of NLGCL contrastive loss
+  lambda_reg: 1.0e-4  # L2 on embeddings
+  seed: 42
+  log_every: 5
+
+ranking:
+  alpha_emb: 0.6
+  beta_chem: 0.25
+  gamma_pref: 0.15
+  top_k: 20
