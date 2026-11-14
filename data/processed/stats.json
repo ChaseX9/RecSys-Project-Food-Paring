@@ -1,0 +1,224 @@
+{
+  "recipes_raw": 522517,
+  "ingredients_distinct_before_filter": 5945,
+  "ingredients_vocab_size": 2609,
+  "recipes_kept": 484913,
+  "interactions_raw": 1401982,
+  "rating_distribution_raw": {
+    "0": 76248,
+    "1": 16559,
+    "2": 17597,
+    "3": 50279,
+    "4": 229217,
+    "5": 1012082
+  },
+  "interactions_after_drop_zero": 1325734,
+  "interactions_on_kept_recipes": 1229848,
+  "interactions_after_kcore": 972113,
+  "recipes_with_interactions": 226978,
+  "split_sizes": {
+    "train": 921553,
+    "val": 25280,
+    "test": 25280
+  },
+  "n_users": 25280,
+  "n_recipes": 226978,
+  "sparsity": 0.9998305834176646,
+  "positive_share_train": 0.7598499489448789,
+  "train_recipes": 222552,
+  "recipes_only_in_val_test": 4426,
+  "users_with_empty_profile": 334,
+  "flavorgraph": {
+    "flavorgraph_matched_ingredients": 2288,
+    "flavorgraph_matched_share_recipe_weighted": 0.9766051151838616,
+    "ingredients_with_compounds": 275,
+    "ingredients_with_compounds_share_recipe_weighted": 0.501373933078268,
+    "top100_ingredients_with_compounds": 54,
+    "n_compounds": 1610,
+    "chemical_similarity_nonzero_pairs": 63590
+  },
+  "top_ingredients": [
+    {
+      "name": "butter",
+      "n_recipes": 146348
+    },
+    {
+      "name": "sugar",
+      "n_recipes": 127472
+    },
+    {
+      "name": "garlic",
+      "n_recipes": 120470
+    },
+    {
+      "name": "egg",
+      "n_recipes": 118411
+    },
+    {
+      "name": "onion",
+      "n_recipes": 107979
+    },
+    {
+      "name": "flour",
+      "n_recipes": 104234
+    },
+    {
+      "name": "olive oil",
+      "n_recipes": 89139
+    },
+    {
+      "name": "milk",
+      "n_recipes": 58940
+    },
+    {
+      "name": "pepper",
+      "n_recipes": 48894
+    },
+    {
+      "name": "tomato",
+      "n_recipes": 44809
+    },
+    {
+      "name": "lemon juice",
+      "n_recipes": 43017
+    },
+    {
+      "name": "brown sugar",
+      "n_recipes": 40829
+    },
+    {
+      "name": "baking powder",
+      "n_recipes": 39354
+    },
+    {
+      "name": "green onion",
+      "n_recipes": 36354
+    },
+    {
+      "name": "parsley",
+      "n_recipes": 34859
+    },
+    {
+      "name": "baking soda",
+      "n_recipes": 32974
+    },
+    {
+      "name": "carrot",
+      "n_recipes": 32518
+    },
+    {
+      "name": "parmesan cheese",
+      "n_recipes": 32157
+    },
+    {
+      "name": "vanilla",
+      "n_recipes": 31154
+    },
+    {
+      "name": "vanilla extract",
+      "n_recipes": 29273
+    },
+    {
+      "name": "black pepper",
+      "n_recipes": 28518
+    },
+    {
+      "name": "cinnamon",
+      "n_recipes": 27978
+    },
+    {
+      "name": "sour cream",
+      "n_recipes": 26929
+    },
+    {
+      "name": "margarine",
+      "n_recipes": 24642
+    },
+    {
+      "name": "ground black pepper",
+      "n_recipes": 24069
+    },
+    {
+      "name": "powdered sugar",
+      "n_recipes": 23894
+    },
+    {
+      "name": "cream cheese",
+      "n_recipes": 23534
+    },
+    {
+      "name": "garlic powder",
+      "n_recipes": 22971
+    },
+    {
+      "name": "cilantro",
+      "n_recipes": 22834
+    },
+    {
+      "name": "celery",
+      "n_recipes": 22503
+    }
+  ],
+  "rarest_kept_ingredients": [
+    {
+      "name": "purslane",
+      "n_recipes": 20
+    },
+    {
+      "name": "reduced-sugar orange marmalade",
+      "n_recipes": 20
+    },
+    {
+      "name": "salad potato",
+      "n_recipes": 20
+    },
+    {
+      "name": "seedless black grape",
+      "n_recipes": 20
+    },
+    {
+      "name": "smoked trout fillet",
+      "n_recipes": 20
+    },
+    {
+      "name": "soymilk lite",
+      "n_recipes": 20
+    },
+    {
+      "name": "sugar-free instant butterscotch pudding mix",
+      "n_recipes": 20
+    },
+    {
+      "name": "thick soy sauce",
+      "n_recipes": 20
+    },
+    {
+      "name": "thin soy sauce",
+      "n_recipes": 20
+    },
+    {
+      "name": "unsweetened mixed berry",
+      "n_recipes": 20
+    },
+    {
+      "name": "vanilla custard",
+      "n_recipes": 20
+    },
+    {
+      "name": "veal demi-glace",
+      "n_recipes": 20
+    },
+    {
+      "name": "white chocolate bark",
+      "n_recipes": 20
+    },
+    {
+      "name": "winter savory",
+      "n_recipes": 20
+    },
+    {
+      "name": "yellow pear tomato",
+      "n_recipes": 20
+    }
+  ]
+}

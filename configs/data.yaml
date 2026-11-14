@@ -1,0 +1,31 @@
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  recipes_file: recipes.csv
+  reviews_file: reviews.csv
+  aliases_file: configs/ingredient_aliases.yaml
+
+recipes:
+  min_ingredients: 3
+  max_ingredients: 25
+
+ingredients:
+  min_recipes: 20                      # min number of recipes for an ingredient to enter the vocabulary
+  stop_ingredients: [water, salt, ice] # ubiquitous ingredients that pollute co-occurrence
+
+interactions:
+  drop_rating_zero: true               # Rating 0 means a review without a rating
+  min_user_interactions: 5
+  min_recipe_interactions: 1           # 1 = no filter
+
+split:
+  strategy: leave_last_out             # last interaction -> test, second to last -> val, rest -> train
+
+profiles:
+  positive_rating_gt: 4                # "rating > 4" from the Week 1 plan (i.e. 5/5)
+
+flavorgraph:
+  enabled: true
+  dir: data/raw/flavorgraph
+  nodes_file: nodes_191120.csv
+  edges_file: edges_191120.csv

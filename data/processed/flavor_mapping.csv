@@ -1,0 +1,2610 @@
+ingredient_id,name,in_flavorgraph,has_compounds
+0,butter,True,True
+1,sugar,True,True
+2,garlic,True,True
+3,egg,True,True
+4,onion,True,True
+5,flour,True,True
+6,olive oil,True,False
+7,milk,True,True
+8,pepper,True,True
+9,tomato,True,True
+10,lemon juice,True,False
+11,brown sugar,True,False
+12,baking powder,True,False
+13,green onion,True,False
+14,parsley,True,True
+15,baking soda,True,False
+16,carrot,True,True
+17,parmesan cheese,True,True
+18,vanilla,True,True
+19,vanilla extract,True,False
+20,black pepper,True,False
+21,cinnamon,True,True
+22,sour cream,True,False
+23,margarine,True,True
+24,ground black pepper,True,False
+25,powdered sugar,True,False
+26,cream cheese,True,True
+27,garlic powder,True,False
+28,cilantro,True,False
+29,celery,True,True
+30,honey,True,True
+31,chicken breast,True,False
+32,oregano,True,True
+33,basil,True,True
+34,thyme,True,True
+35,mayonnaise,True,False
+36,ground beef,True,False
+37,cheddar cheese,True,True
+38,soy sauce,True,False
+39,chicken broth,True,False
+40,potato,True,True
+41,cornstarch,True,False
+42,ginger,True,True
+43,worcestershire sauce,True,False
+44,paprika,True,False
+45,red onion,True,False
+46,chili powder,True,False
+47,bacon,True,False
+48,mushroom,True,True
+49,ground cinnamon,True,False
+50,pecan,True,True
+51,nutmeg,True,True
+52,kosher salt,True,False
+53,walnut,True,True
+54,lemon,True,True
+55,heavy cream,True,False
+56,lime juice,True,False
+57,bay leaf,True,False
+58,cayenne pepper,True,False
+59,ground cumin,True,False
+60,red bell pepper,True,True
+61,red pepper flake,True,False
+62,green pepper,True,False
+63,dijon mustard,True,False
+64,mozzarella cheese,True,True
+65,banana,True,True
+66,canola oil,True,True
+67,raisin,True,True
+68,zucchini,True,False
+69,tomato sauce,True,False
+70,shallot,True,True
+71,spinach,True,True
+72,tomato paste,True,False
+73,cumin,True,True
+74,rosemary,True,True
+75,apple,True,True
+76,shrimp,True,True
+77,ground pepper,True,False
+78,buttermilk,True,True
+79,green bell pepper,True,True
+80,strawberry,True,True
+81,ketchup,True,True
+82,sea salt,True,False
+83,ground ginger,True,False
+84,lime,True,True
+85,vinegar,True,True
+86,chicken,True,True
+87,wheat flour,True,False
+88,chive,True,True
+89,onion powder,True,False
+90,red wine vinegar,True,False
+91,rice,True,True
+92,yellow onion,True,False
+93,light brown sugar,True,False
+94,shortening,True,True
+95,dry white wine,True,False
+96,cucumber,True,True
+97,cheese,True,True
+98,corn,True,True
+99,avocado,True,True
+100,black bean,True,False
+101,white wine,True,True
+102,ground nutmeg,True,False
+103,boiling water,True,False
+104,celery rib,True,False
+105,clove,True,True
+106,curry powder,True,False
+107,pineapple,True,True
+108,white pepper,True,True
+109,dry mustard,True,False
+110,green chily,True,False
+111,salsa,True,False
+112,maple syrup,True,False
+113,orange,True,True
+114,basil leaf,True,False
+115,ham,True,True
+116,cranberry,True,True
+117,cider vinegar,True,False
+118,dill,True,True
+119,monterey jack cheese,True,False
+120,half-and-half,False,False
+121,mustard,True,True
+122,sesame seed,True,False
+123,bell pepper,True,True
+124,sharp cheddar cheese,True,False
+125,ground clove,True,False
+126,evaporated milk,True,True
+127,chocolate chip,True,False
+128,peanut butter,True,True
+129,blueberry,True,True
+130,cold water,True,False
+131,lemon zest,True,False
+132,feta cheese,True,True
+133,white vinegar,True,False
+134,green bean,True,True
+135,chicken breast half,True,False
+136,beef broth,True,False
+137,sweet potato,True,True
+138,tabasco sauce,True,False
+139,warm water,True,False
+140,swiss cheese,True,True
+141,black olive,True,False
+142,broccoli,True,True
+143,skim milk,True,False
+144,flour tortilla,True,False
+145,chickpea,True,True
+146,molasses,True,True
+147,sweetened condensed milk,True,False
+148,cabbage,True,True
+149,plain yogurt,True,False
+150,leek,True,True
+151,cherry tomato,True,True
+152,seasoning salt,True,False
+153,sage,True,True
+154,cinnamon stick,True,False
+155,dark brown sugar,True,False
+156,vegetable broth,True,False
+157,allspice,True,True
+158,hot water,False,False
+159,ground coriander,True,False
+160,cayenne,True,False
+161,lettuce,True,True
+162,pumpkin,True,True
+163,peanut,True,True
+164,turmeric,True,True
+165,raspberry,True,True
+166,red wine,True,True
+167,low-fat milk,False,False
+168,coconut,True,True
+169,sweet onion,True,False
+170,cocoa powder,True,True
+171,coconut milk,True,False
+172,ground turkey,True,False
+173,caper,True,True
+174,chicken thigh,True,False
+175,pine nut,True,False
+176,orange zest,True,False
+177,ricotta cheese,True,True
+178,white wine vinegar,True,False
+179,cornmeal,True,False
+180,barbecue sauce,True,False
+181,rolled oat,True,False
+182,rice vinegar,True,False
+183,active dry yeast,True,False
+184,plum tomato,True,False
+185,apple cider vinegar,True,True
+186,cool whip,True,False
+187,pasta,True,True
+188,eggplant,True,True
+189,flat leaf parsley,True,False
+190,asparagus,True,True
+191,tarragon,True,True
+192,kidney bean,True,True
+193,mango,True,True
+194,low sodium chicken broth,True,False
+195,mint leaf,True,False
+196,light corn syrup,True,False
+197,gingerroot,True,False
+198,beer,True,True
+199,dry sherry,True,False
+200,vodka,True,True
+201,fish sauce,True,False
+202,cumin seed,True,False
+203,vanilla ice cream,True,False
+204,of mint,True,False
+205,hard-boiled egg,False,False
+206,brandy,True,True
+207,heavy whipping cream,True,False
+208,cream of tartar,True,False
+209,applesauce,True,False
+210,broccoli floret,True,False
+211,blue cheese,True,True
+212,marjoram,True,True
+213,ground allspice,True,False
+214,corn tortilla,True,False
+215,celery seed,True,False
+216,spaghetti,True,False
+217,roma tomato,True,False
+218,salmon fillet,True,False
+219,cauliflower,True,True
+220,brown rice,True,False
+221,bread flour,True,False
+222,splenda sugar substitute,True,False
+223,dill weed,True,False
+224,coarse salt,False,False
+225,graham cracker crumb,True,False
+226,granny smith apple,True,False
+227,parsley flake,True,False
+228,date,True,True
+229,cottage cheese,True,True
+230,corn kernel,True,False
+231,cashew,True,False
+232,chili sauce,True,False
+233,sun-dried tomato,False,False
+234,water chestnut,True,True
+235,ground pork,True,False
+236,artichoke heart,True,False
+237,black peppercorn,True,False
+238,kernel corn,True,False
+239,pinto bean,True,False
+240,cake flour,True,False
+241,sherry wine,True,False
+242,elbow macaroni,True,False
+243,beef,True,True
+244,lemon rind,True,False
+245,russet potato,True,False
+246,romaine lettuce,True,False
+247,dry red wine,True,False
+248,white rice,True,False
+249,tortilla chip,True,True
+250,pear,True,True
+251,rum,True,True
+252,oatmeal,True,False
+253,yellow bell pepper,True,True
+254,creamy peanut butter,True,False
+255,kalamata olive,True,False
+256,velveeta cheese,True,False
+257,thyme leaf,True,False
+258,stewed tomato,True,False
+259,pea,True,True
+260,mint,True,True
+261,yogurt,True,True
+262,button mushroom,True,False
+263,oat,True,True
+264,golden raisin,True,False
+265,lemon peel,True,False
+266,flaked coconut,True,False
+267,sunflower seed,True,False
+268,maraschino cherry,True,False
+269,cherry,True,True
+270,bittersweet chocolate,True,False
+271,poppy seed,True,True
+272,pumpkin puree,True,False
+273,nonfat milk,True,False
+274,tomato juice,True,False
+275,romano cheese,True,True
+276,chicken bouillon cube,True,False
+277,tomato puree,True,False
+278,unbleached all-purpose flour,False,False
+279,hoisin sauce,True,False
+280,pumpkin pie spice,True,False
+281,fennel seed,True,False
+282,low sodium soy sauce,True,False
+283,italian parsley,True,False
+284,tuna,True,False
+285,provolone cheese,True,True
+286,cracked black pepper,False,False
+287,caraway seed,True,False
+288,baking potato,True,False
+289,garam masala,True,False
+290,half-and-half cream,False,False
+291,soymilk,True,False
+292,prosciutto,True,False
+293,panko breadcrumb,True,False
+294,yellow cornmeal,True,False
+295,corn syrup,True,False
+296,poultry seasoning,True,False
+297,unsweetened applesauce,True,False
+298,firm tofu,True,False
+299,yellow mustard,True,False
+300,hamburger,True,True
+301,pineapple chunk,True,False
+302,parmigiano-reggiano cheese,False,False
+303,mustard seed,True,False
+304,bean sprout,True,False
+305,sausage,True,True
+306,egg substitute,True,False
+307,pecan half,True,False
+308,lettuce leaf,True,False
+309,dark chocolate,True,False
+310,grape tomato,True,False
+311,apple cider,True,False
+312,ground cardamom,True,False
+313,cornflour,True,False
+314,puff pastry,True,False
+315,coarse ground black pepper,False,False
+316,wheat germ,True,False
+317,pimiento,True,False
+318,american cheese,True,False
+319,red kidney bean,True,False
+320,miniature marshmallow,True,False
+321,green olive,True,False
+322,herb,True,False
+323,linguine,True,False
+324,unflavored gelatin,True,False
+325,splenda granular,True,False
+326,dark rum,True,False
+327,oregano leaf,True,False
+328,coconut oil,True,False
+329,liquid smoke,True,False
+330,quick-cooking oat,False,False
+331,light soy sauce,True,False
+332,mandarin orange,True,True
+333,vegetable shortening,True,False
+334,cannellini bean,True,False
+335,coriander,True,True
+336,ground turmeric,True,False
+337,oyster sauce,True,False
+338,peppercorn,True,False
+339,marshmallow,True,True
+340,white chocolate chip,True,False
+341,bourbon,True,False
+342,old fashioned oat,True,False
+343,pork,True,True
+344,lime zest,True,False
+345,table salt,False,False
+346,yukon gold potato,True,False
+347,pesto sauce,True,False
+348,penne pasta,True,False
+349,gruyere cheese,True,True
+350,catsup,True,False
+351,hazelnut,True,True
+352,currant,True,True
+353,lemon wedge,True,False
+354,white chocolate,True,False
+355,mashed potato,True,False
+356,lemongrass,True,False
+357,chocolate,True,True
+358,sauerkraut,True,False
+359,turkey,True,True
+360,italian sausage,True,False
+361,rhubarb,True,True
+362,parsnip,True,True
+363,snow pea,True,False
+364,parsley leaf,True,False
+365,vanilla bean,True,False
+366,long grain rice,True,False
+367,basmati rice,True,True
+368,beef bouillon cube,True,False
+369,chicken wing,True,False
+370,couscous,True,True
+371,lime wedge,True,False
+372,green cabbage,True,False
+373,lentil,True,True
+374,monterey jack pepper cheese,True,False
+375,light sour cream,False,False
+376,green pea,True,False
+377,mustard powder,True,False
+378,dry yeast,True,False
+379,salmon,True,True
+380,radish,True,True
+381,miracle whip,True,False
+382,horseradish,True,True
+383,orange marmalade,True,False
+384,lemon pepper,True,False
+385,chili pepper,True,False
+386,creme fraiche,True,False
+387,vanilla essence,True,False
+388,self-rising flour,False,False
+389,tortilla,True,True
+390,light mayonnaise,True,False
+391,cranberry juice,True,False
+392,graham cracker,True,False
+393,portabella mushroom,True,False
+394,flat-leaf parsley,False,False
+395,beet,True,False
+396,chicken piece,True,False
+397,tahini,True,False
+398,kale,True,True
+399,turmeric powder,True,False
+400,green chili pepper,True,False
+401,great northern bean,True,False
+402,quinoa,True,True
+403,new potato,True,False
+404,blackberry,True,True
+405,sweet paprika,True,False
+406,reduced-sodium chicken broth,False,False
+407,macaroni,True,True
+408,tart apple,True,False
+409,iceberg lettuce,True,False
+410,quick oat,True,False
+411,red chili powder,True,False
+412,ghee,True,True
+413,broth,True,False
+414,instant vanilla pudding,True,False
+415,orzo pasta,True,False
+416,kahlua,True,False
+417,pistachio,True,True
+418,self raising flour,True,False
+419,pancetta,True,False
+420,sweetened flaked coconut,True,False
+421,olive,True,True
+422,cherry pie filling,True,False
+423,shiitake mushroom,True,False
+424,asiago cheese,True,False
+425,flax seed,True,False
+426,tomatoes with juice,True,False
+427,sage leaf,True,False
+428,arugula,True,False
+429,powdered milk,True,False
+430,ginger ale,True,False
+431,arborio rice,True,False
+432,red cabbage,True,False
+433,cardamom,True,True
+434,chorizo sausage,True,False
+435,unbleached flour,False,False
+436,cremini mushroom,True,False
+437,turnip,True,True
+438,ground chicken,True,False
+439,fennel bulb,True,False
+440,long-grain rice,False,False
+441,white bean,True,False
+442,part-skim mozzarella cheese,False,False
+443,smoked sausage,True,False
+444,cumin powder,True,False
+445,triple sec,True,False
+446,grand marnier,True,False
+447,ground mustard,True,False
+448,self-raising flour,False,False
+449,clam,True,True
+450,english cucumber,True,False
+451,coffee,True,True
+452,baguette,True,False
+453,instant coffee,True,False
+454,mirin,True,False
+455,white mushroom,True,False
+456,bisquick,True,False
+457,brussels sprout,True,True
+458,saffron,True,True
+459,fat free cream cheese,True,False
+460,red chili pepper,True,False
+461,angel hair pasta,True,False
+462,low-fat sour cream,False,False
+463,bacon bit,True,False
+464,mascarpone cheese,True,False
+465,light cream cheese,True,False
+466,asparagus spear,True,False
+467,roasting chicken,True,False
+468,red chily,True,False
+469,mini marshmallow,True,False
+470,sugar substitute,True,True
+471,ground cayenne pepper,True,False
+472,smoked salmon,True,False
+473,black-eyed pea,False,False
+474,dill pickle,True,False
+475,fettuccine,True,False
+476,pork sausage,True,False
+477,fig,True,True
+478,coriander powder,True,False
+479,feta,True,False
+480,lamb,True,True
+481,red capsicum,True,False
+482,amaretto,True,False
+483,reduced sodium soy sauce,True,False
+484,wheat pastry flour,True,False
+485,ground lamb,True,False
+486,anchovy fillet,True,False
+487,sherry wine vinegar,True,False
+488,gorgonzola,True,False
+489,lemon slice,True,False
+490,berry,True,True
+491,ground flax seed,True,False
+492,artificial sweetener,False,False
+493,crouton,True,False
+494,colby-monterey jack cheese,False,False
+495,nonfat sour cream,False,False
+496,brewed coffee,True,False
+497,lump crabmeat,True,False
+498,chipotle chiles in adobo,True,False
+499,kielbasa,True,False
+500,green chili,True,False
+501,instant yeast,True,False
+502,gelatin,True,True
+503,wonton wrapper,True,True
+504,fat free sour cream,False,False
+505,cognac,True,False
+506,watercress,True,True
+507,vanilla instant pudding mix,True,False
+508,hash brown,True,False
+509,thyme leave,False,False
+510,pork chop,True,False
+511,sake,True,True
+512,chipotle chile in adobo,True,False
+513,crystallized ginger,True,False
+514,tofu,True,True
+515,wild rice,True,True
+516,golden syrup,True,False
+517,cauliflower floret,True,False
+518,sultana,True,False
+519,cracked pepper,True,False
+520,navy bean,True,False
+521,okra,True,True
+522,tomatoes and green chily,True,False
+523,low-fat mayonnaise,False,False
+524,saffron thread,True,False
+525,vanilla yogurt,True,False
+526,alfredo sauce,True,False
+527,rice wine,True,False
+528,low-fat cheddar cheese,False,False
+529,rotini pasta,False,False
+530,cantaloupe,True,False
+531,wine vinegar,True,False
+532,chily,True,False
+533,pearl barley,True,False
+534,cardamom pod,True,False
+535,instant coffee granule,False,False
+536,spanish onion,True,False
+537,tamari,True,False
+538,chicken bouillon,True,False
+539,low fat cottage cheese,True,False
+540,mint sprig,True,False
+541,bisquick baking mix,True,False
+542,penne,True,False
+543,prune,True,False
+544,unsweetened coconut,True,False
+545,reduced-fat cream cheese,False,False
+546,graham cracker crust,True,False
+547,shell pasta,True,False
+548,chili bean,True,False
+549,papaya,True,True
+550,barley,True,True
+551,sea scallop,True,False
+552,orange bell pepper,True,True
+553,beef stew meat,True,False
+554,plain low-fat yogurt,False,False
+555,bicarbonate of soda,True,False
+556,curry leaf,True,True
+557,xanthan gum,True,False
+558,graham cracker pie crust,True,False
+559,kiwi fruit,True,False
+560,bow tie pasta,True,False
+561,red lentil,True,False
+562,ice cream,True,True
+563,star anise,True,True
+564,mussel,True,False
+565,beef brisket,True,False
+566,english muffin,True,False
+567,dark soy sauce,True,False
+568,instant chocolate pudding mix,True,False
+569,berry cranberry sauce,True,False
+570,scallop,True,True
+571,crunchy peanut butter,True,False
+572,deli ham,True,False
+573,plain fat-free yogurt,False,False
+574,watermelon,True,False
+575,extra-sharp cheddar cheese,False,False
+576,napa cabbage,True,False
+577,jalapeno chile,True,False
+578,low-fat buttermilk,False,False
+579,pineapple tidbit,True,False
+580,stewing beef,True,False
+581,fontina cheese,True,False
+582,part-skim ricotta cheese,False,False
+583,lima bean,True,True
+584,parsley sprig,True,False
+585,chunky salsa,True,False
+586,red chile,True,False
+587,corned beef,True,False
+588,light rum,True,False
+589,olive oil flavored cooking spray,True,False
+590,pecorino romano cheese,True,False
+591,dark corn syrup,True,False
+592,phyllo dough,True,True
+593,thyme sprig,True,False
+594,reduced-fat sour cream,False,False
+595,sugar snap pea,True,False
+596,fine sea salt,True,False
+597,tuna in water,True,False
+598,chicken bouillon granule,True,False
+599,hash brown potato,True,False
+600,soya sauce,True,False
+601,mild cheddar cheese,True,False
+602,pimento,True,False
+603,rosemary leaf,True,False
+604,pitted date,True,False
+605,rotel tomato,True,False
+606,plum,True,True
+607,cointreau liqueur,True,False
+608,port wine,True,True
+609,rigatoni pasta,True,False
+610,flax seed meal,True,False
+611,philadelphia cream cheese,True,False
+612,light olive oil,True,False
+613,unsweetened coconut milk,True,False
+614,wine,True,True
+615,bamboo shoot,True,True
+616,apricot,True,True
+617,egg beaters egg substitute,False,False
+618,mixed spice,True,False
+619,turkey breast,True,False
+620,bok choy,True,False
+621,french baguette,True,False
+622,marshmallow creme,True,False
+623,spicy brown mustard,True,False
+624,chinese five spice powder,True,False
+625,low-fat cream cheese,False,False
+626,smoked ham,True,False
+627,fat-free mayonnaise,False,False
+628,nutritional yeast,True,False
+629,coconut cream,False,False
+630,plain nonfat yogurt,True,False
+631,low-fat plain yogurt,False,False
+632,pecan piece,True,False
+633,pitted black olive,True,False
+634,celery leaf,True,False
+635,dijon-style mustard,False,False
+636,fettuccine pasta,True,False
+637,ground sage,True,False
+638,acorn squash,True,False
+639,potato starch,True,False
+640,habanero pepper,True,False
+641,chunky peanut butter,True,False
+642,walnut piece,True,False
+643,chicken drumstick,True,False
+644,long-grain white rice,False,False
+645,wheat tortilla,True,False
+646,poblano chile,True,False
+647,self rising flour,True,False
+648,mixed herb,True,False
+649,white potato,True,False
+650,spinach leaf,True,False
+651,light coconut milk,True,False
+652,five-spice powder,False,False
+653,marshmallow cream,True,False
+654,distilled white vinegar,False,False
+655,mace,True,True
+656,mango chutney,True,False
+657,rose water,True,False
+658,rubbed sage,True,False
+659,rotel,True,False
+660,tea bag,True,False
+661,cooking apple,True,False
+662,coarse sea salt,False,False
+663,pasta shell,True,False
+664,leg of lamb,True,False
+665,andouille sausage,True,False
+666,sun-dried tomato in oil,False,False
+667,red seedless grape,True,False
+668,garlic paste,True,False
+669,ginger powder,True,False
+670,walnut half,True,False
+671,beef roast,True,False
+672,dry vermouth,True,False
+673,red potato,True,False
+674,ancho chile powder,True,False
+675,adobo sauce,True,False
+676,cod fish fillet,True,False
+677,ziti pasta,True,False
+678,arrowroot,True,True
+679,chicken leg,True,False
+680,anise seed,True,False
+681,hot italian sausage,True,False
+682,jicama,True,True
+683,red apple,True,False
+684,yoghurt,True,False
+685,smoked bacon,True,False
+686,sweet butter,True,False
+687,cranberry sauce,True,False
+688,green apple,True,False
+689,irish cream,True,False
+690,chipotle chile,True,False
+691,swiss chard,True,False
+692,grape,True,True
+693,beef bouillon granule,True,False
+694,rosemary sprig,True,False
+695,dark red kidney bean,True,False
+696,artichoke,True,True
+697,savory,True,False
+698,squash,True,False
+699,low sodium beef broth,False,False
+700,sun-dried tomatoes in oil,False,False
+701,basil pesto,True,False
+702,biscuit mix,True,False
+703,navel orange,True,False
+704,nonfat plain yogurt,True,False
+705,canadian bacon,True,False
+706,red curry paste,True,False
+707,craisin,True,False
+708,italian-style tomato,False,False
+709,liquid honey,True,False
+710,granola cereal,True,False
+711,accent seasoning,False,False
+712,pickle,True,False
+713,curd cottage cheese,True,False
+714,marsala wine,True,False
+715,butter bean,True,False
+716,lime slice,True,False
+717,bread machine yeast,True,False
+718,fennel,True,True
+719,white cheddar cheese,True,False
+720,broiler-fryer chicken,False,False
+721,golden delicious apple,True,False
+722,oleo,True,False
+723,white rum,True,False
+724,jumbo shrimp,True,False
+725,gruyere,True,False
+726,kaffir lime leaf,True,False
+727,mexican oregano,True,True
+728,chicken breast fillet,False,False
+729,tomato ketchup,True,False
+730,fat-free evaporated milk,False,False
+731,long grain white rice,True,False
+732,mixed berry,True,False
+733,anchovy,True,True
+734,polenta,True,False
+735,porcini mushroom,True,False
+736,beef tenderloin,True,False
+737,gouda cheese,True,False
+738,baby shrimp,True,False
+739,green tomato,True,False
+740,nectarine,True,False
+741,ladyfinger,True,False
+742,serrano chily,True,False
+743,bacon dripping,True,False
+744,grapefruit juice,True,False
+745,season salt,True,False
+746,turbinado sugar,True,False
+747,palm sugar,True,False
+748,low-fat vanilla yogurt,False,False
+749,pomegranate juice,True,False
+750,ginger paste,True,False
+751,instant espresso powder,True,False
+752,stevia,True,False
+753,sweet pepper,True,False
+754,sriracha sauce,True,False
+755,fast rising yeast,True,False
+756,ground white pepper,True,False
+757,strawberry jell-o gelatin dessert,False,False
+758,almond butter,True,False
+759,cashew nut,True,True
+760,curry paste,True,False
+761,tomatoes with green chily,True,False
+762,coarse black pepper,False,False
+763,coarse grain mustard,True,False
+764,salt pork,True,False
+765,bulk pork sausage,True,False
+766,light butter,True,False
+767,brown lentil,True,False
+768,chipotle pepper,True,False
+769,unbleached white flour,True,False
+770,kiwi,True,True
+771,vanilla pudding mix,True,False
+772,cool whip topping,True,False
+773,reduced-fat cheddar cheese,False,False
+774,minute rice,True,False
+775,hot red pepper flake,True,False
+776,baking mix,True,False
+777,serrano chili,True,False
+778,chicken liver,True,False
+779,pickling salt,True,False
+780,coconut flake,True,False
+781,anchovy paste,True,False
+782,cilantro stem,True,False
+783,curry,True,False
+784,dark molasses,True,False
+785,fat-free chicken broth,False,False
+786,walnut oil,True,False
+787,blue curacao,True,False
+788,mushroom stems and piece,True,False
+789,pistachio nut,True,False
+790,adobo seasoning,True,False
+791,dark beer,True,False
+792,phyllo pastry,True,False
+793,vegetable bouillon cube,True,False
+794,nonfat yogurt,True,False
+795,powdered ginger,True,False
+796,ground mace,True,False
+797,raspberry vinegar,True,False
+798,almond paste,True,False
+799,bacon grease,True,False
+800,madeira wine,True,True
+801,breakfast sausage,True,False
+802,roast beef,True,False
+803,tuna steak,True,False
+804,white button mushroom,True,False
+805,beef chuck,True,False
+806,grapefruit,True,True
+807,creme de cacao,True,False
+808,dry milk,True,False
+809,sweetened cranberry,True,False
+810,grainy mustard,True,False
+811,colby cheese,True,False
+812,cream of coconut,True,False
+813,seedless grape,True,False
+814,catfish fillet,True,False
+815,green,True,False
+816,limeade concentrate,True,False
+817,miso,True,True
+818,sweetened coconut,True,False
+819,golden brown sugar,True,False
+820,key lime juice,True,False
+821,salmon steak,True,False
+822,chocolate ice cream,True,False
+823,muenster cheese,True,False
+824,black mustard seed,True,False
+825,tapioca flour,True,False
+826,farfalle pasta,True,False
+827,lime rind,False,False
+828,queso fresco,True,False
+829,tarragon vinegar,True,False
+830,french style green bean,True,False
+831,tamarind paste,True,False
+832,green seedless grape,True,False
+833,rotel tomatoes chily,True,False
+834,bulgur,True,True
+835,idaho potato,True,False
+836,garlic granule,True,False
+837,pork loin,True,False
+838,seasoned rice vinegar,True,False
+839,silken tofu,True,False
+840,matzo meal,True,False
+841,msg,True,False
+842,spaghetti squash,True,False
+843,yeast,True,False
+844,fat free chicken broth,True,False
+845,fenugreek seed,True,False
+846,seedless raisin,True,False
+847,baileys irish cream,True,False
+848,soft brown sugar,True,False
+849,romaine lettuce leaf,True,False
+850,cod,True,False
+851,edamame,True,False
+852,asafoetida powder,True,False
+853,jumbo pasta shell,True,False
+854,red leaf lettuce,True,False
+855,sambal oelek,True,False
+856,candied ginger,True,False
+857,cayenne powder,True,False
+858,malt vinegar,True,False
+859,pork shoulder,True,False
+860,vanilla vodka,True,False
+861,bacon fat,True,False
+862,crisco shortening,True,False
+863,chutney,True,False
+864,fat-free cottage cheese,False,False
+865,strawberry gelatin,True,False
+866,halibut fillet,True,False
+867,hungarian paprika,True,False
+868,quick-cooking oatmeal,False,False
+869,bay scallop,True,False
+870,burgundy wine,True,False
+871,ground oregano,True,False
+872,courgette,True,False
+873,smoked gouda cheese,False,False
+874,head of cabbage,True,False
+875,pineapple slice,True,False
+876,thai basil,True,False
+877,vital wheat gluten,True,False
+878,hot paprika,True,False
+879,tamari soy sauce,True,False
+880,clear honey,True,False
+881,green grape,True,False
+882,green lentil,True,False
+883,low-fat yogurt,False,False
+884,semolina,True,True
+885,allspice berry,True,False
+886,white wheat flour,True,False
+887,apple butter,True,False
+888,baby portabella mushroom,True,False
+889,garam masala powder,True,False
+890,hellmann s mayonnaise,True,False
+891,instant coffee powder,True,False
+892,nori,True,False
+893,sparkling water,True,False
+894,honeydew melon,True,False
+895,lemon pepper seasoning,True,False
+896,pickle juice,True,False
+897,chervil,True,True
+898,italian plum tomato,True,False
+899,italian tomato,True,False
+900,savoy cabbage,True,False
+901,bibb lettuce,True,False
+902,hot chili pepper,True,False
+903,mild green chily,True,False
+904,sweet basil,True,True
+905,chick-pea,False,False
+906,flat-leaf italian parsley,False,False
+907,pineapple chunks in juice,True,False
+908,red currant jelly,True,False
+909,cooking sherry,True,False
+910,chambord raspberry liquor,True,False
+911,jello gelatin,True,False
+912,lime peel,True,False
+913,harissa,True,False
+914,alfalfa sprout,True,False
+915,dark raisin,True,False
+916,scotch bonnet pepper,True,False
+917,green onion top,True,False
+918,mild italian sausage,True,False
+919,bouillon cube,True,False
+920,pitted olive,True,False
+921,spaghetti noodle,True,False
+922,tea,True,True
+923,quick-cooking tapioca,False,False
+924,white corn syrup,True,False
+925,head cauliflower,True,False
+926,buckwheat flour,True,False
+927,champagne vinegar,True,False
+928,black sesame seed,True,False
+929,dry red pepper,True,False
+930,short-grain rice,False,False
+931,cardamom powder,True,False
+932,hot chili sauce,True,False
+933,mascarpone,True,False
+934,plantain,True,False
+935,puff pastry sheet,True,False
+936,butter flavor shortening,True,False
+937,country-style pork rib,False,False
+938,low-fat ricotta cheese,False,False
+939,soda water,True,False
+940,beef chuck roast,True,False
+941,tart cherry,True,False
+942,white bread flour,True,False
+943,anaheim chily,True,False
+944,salsa verde,True,False
+945,tapioca starch,True,False
+946,banana pepper,True,False
+947,polish sausage,True,False
+948,red grape,True,False
+949,white kidney bean,True,False
+950,amaretto liqueur,True,False
+951,cool whip lite,True,False
+952,lobster,True,True
+953,hominy,True,False
+954,baby arugula,True,False
+955,demerara sugar,True,False
+956,lamb chop,True,False
+957,apple pie spice,True,False
+958,ground sausage,True,False
+959,fat-free cheddar cheese,False,False
+960,milk ricotta cheese,True,False
+961,cider,True,True
+962,pomegranate seed,True,False
+963,mashed sweet potato,True,False
+964,tarragon leaf,True,False
+965,chicken tenderloin,True,False
+966,chinese cabbage,True,True
+967,ham hock,True,False
+968,portabella mushroom cap,True,False
+969,seedless cucumber,True,False
+970,brown mustard,True,False
+971,ham bone,True,False
+972,vegan margarine,True,False
+973,light molasses,True,False
+974,mandarin orange segment,True,False
+975,chocolate curl,False,False
+976,instant mashed potato,True,False
+977,monterey jack and cheddar cheese blend,True,False
+978,radicchio,True,False
+979,turkey sausage,True,False
+980,havarti cheese,True,False
+981,romaine lettuce heart,True,False
+982,chicken bouillon powder,True,False
+983,chicken cutlet,True,False
+984,cardamom seed,True,False
+985,cranberry juice cocktail,True,False
+986,inch flour tortilla,True,False
+987,turkey broth,True,False
+988,baby bok choy,True,False
+989,pico de gallo,True,False
+990,frying chicken,True,False
+991,roquefort cheese,True,True
+992,chile,True,False
+993,green capsicum,True,False
+994,red snapper fillet,True,False
+995,stuffed green olive,True,False
+996,arugula leaf,True,False
+997,pork loin chop,True,False
+998,dry pasta,True,False
+999,stuffing,True,False
+1000,light margarine,True,False
+1001,thai red curry paste,True,False
+1002,baby pea,True,False
+1003,boiling potato,True,False
+1004,non-fat powdered milk,False,False
+1005,beef round steak,True,False
+1006,bulk italian sausage,True,False
+1007,dry active yeast,True,False
+1008,vermouth,True,True
+1009,hass avocadoe,True,False
+1010,baking apple,True,False
+1011,beef tenderloin steak,True,False
+1012,jellied cranberry sauce,True,False
+1013,mushroom cap,True,False
+1014,creole mustard,True,False
+1015,fire-roasted tomato,False,False
+1016,daikon radish,True,False
+1017,dry basil,True,False
+1018,fine salt,True,False
+1019,beef top sirloin steak,False,False
+1020,lamb shank,True,False
+1021,pork loin roast,True,False
+1022,mild salsa,True,False
+1023,plum sauce,True,False
+1024,sharp white cheddar cheese,True,False
+1025,thai fish sauce,True,False
+1026,escarole,True,False
+1027,lamb shoulder,True,False
+1028,vanilla flavoring,True,False
+1029,rump roast,True,False
+1030,masa harina,True,False
+1031,seltzer water,True,False
+1032,aubergine,True,False
+1033,green curry paste,True,False
+1034,sugar-free instant vanilla pudding mix,False,False
+1035,beefsteak tomato,True,False
+1036,fat-free buttermilk,False,False
+1037,ham steak,True,False
+1038,processed cheese,True,False
+1039,stove top stuffing mix,True,False
+1040,kitchen bouquet,True,False
+1041,lemon-pepper seasoning,False,False
+1042,pickled ginger,True,False
+1043,white corn,True,False
+1044,chicken meat,True,False
+1045,chicken part,True,False
+1046,non-fat vanilla yogurt,False,False
+1047,dry oregano,True,False
+1048,manchego cheese,True,False
+1049,sweet hungarian paprika,True,False
+1050,equal sugar substitute,True,False
+1051,green cardamom pod,True,False
+1052,all-purpose white flour,False,False
+1053,bulk sausage,True,False
+1054,grits,False,False
+1055,rocket,True,False
+1056,kirsch,True,False
+1057,macaroni noodle,True,False
+1058,beetroot,True,True
+1059,ground walnut,True,False
+1060,pineapple ring,True,False
+1061,wasabi powder,True,False
+1062,boston lettuce,True,False
+1063,bouillon,True,False
+1064,fat-free cool whip,False,False
+1065,instant garlic,True,False
+1066,squid,True,True
+1067,bulb of garlic,True,False
+1068,solid-pack pumpkin,False,False
+1069,cool whip free,True,False
+1070,steel cut oat,True,False
+1071,no-salt-added tomato,False,False
+1072,baby potato,True,False
+1073,bouquet garni,True,False
+1074,butter lettuce,True,False
+1075,cotija cheese,True,False
+1076,reduced-fat sharp cheddar cheese,False,False
+1077,spiral shaped pasta,True,False
+1078,wheat pasta,True,False
+1079,spiced rum,True,False
+1080,gelatin powder,True,False
+1081,soft tofu,True,False
+1082,beef sirloin,True,False
+1083,white shoepeg corn,True,False
+1084,old-fashioned oatmeal,False,False
+1085,green cardamom,True,False
+1086,raspberry jell-o gelatin,False,False
+1087,tangerine,True,True
+1088,bittersweet chocolate chip,True,False
+1089,center-cut pork chop,False,False
+1090,chestnut,True,True
+1091,chickpea flour,True,False
+1092,fat-free ricotta cheese,False,False
+1093,long grain brown rice,True,False
+1094,ground fennel,True,False
+1095,water-packed artichoke heart,False,False
+1096,bagel,True,True
+1097,instant pudding mix,True,False
+1098,seasoned crouton,True,False
+1099,dill sprig,True,False
+1100,green peppercorn,True,False
+1101,green leaf lettuce,True,False
+1102,streaky bacon,True,False
+1103,tapioca,True,False
+1104,beef steak,True,False
+1105,bosc pear,True,False
+1106,sweet pickle,True,False
+1107,instant chicken bouillon granule,True,False
+1108,mushroom piece,True,False
+1109,stilton cheese,True,False
+1110,lime jell-o gelatin,False,False
+1111,flounder fillet,True,False
+1112,herb seasoned stuffing mix,True,False
+1113,lager beer,True,False
+1114,mild curry powder,True,False
+1115,celery root,True,False
+1116,fingerling potato,True,False
+1117,gluten,True,False
+1118,green sweet pepper,True,False
+1119,yellow sweet pepper,True,False
+1120,bulgar wheat,False,False
+1121,lowfat mozzarella cheese,True,False
+1122,steamed rice,False,False
+1123,hot sausage,True,False
+1124,burrito-size flour tortilla,False,False
+1125,condensed beef broth,True,False
+1126,crabmeat,True,False
+1127,japanese eggplant,True,False
+1128,marsala,True,False
+1129,sole fillet,True,False
+1130,ancho chile,True,False
+1131,gala apple,True,False
+1132,ground coffee,True,False
+1133,hamburger meat,True,False
+1134,light-brown sugar,False,False
+1135,wasabi paste,True,False
+1136,string bean,True,False
+1137,sweetcorn,True,True
+1138,firm banana,True,False
+1139,galangal,True,False
+1140,non-dairy whipped topping,False,False
+1141,phyllo pastry sheet,True,False
+1142,red delicious apple,True,False
+1143,unsifted flour,True,False
+1144,ale,True,False
+1145,carnation evaporated milk,True,False
+1146,cheese slice,True,False
+1147,fast rise yeast,True,False
+1148,instant pistachio pudding mix,True,False
+1149,beef flank steak,False,False
+1150,nutritional yeast flake,True,False
+1151,parchment paper,True,False
+1152,smoked ham hock,True,False
+1153,white miso,True,False
+1154,yellow mustard seed,True,False
+1155,quick-cooking grits,False,False
+1156,red sweet bell pepper,True,False
+1157,seedless watermelon,True,False
+1158,sweet pea,True,False
+1159,vegan mayonnaise,True,False
+1160,black tea,True,True
+1161,green onions with top,True,False
+1162,thick chunky salsa,True,False
+1163,bartlett pear,True,True
+1164,beef mince,True,False
+1165,focaccia bread,True,False
+1166,vanilla-flavored soymilk,False,False
+1167,belgian endive,True,False
+1168,coffee ice cream,True,False
+1169,deli roast beef,True,False
+1170,unsweetened flaked coconut,True,False
+1171,baby red potato,True,False
+1172,cream-style cottage cheese,False,False
+1173,hass avocado,True,False
+1174,saffron strand,True,False
+1175,littleneck clam,True,False
+1176,fat free mozzarella cheese,True,False
+1177,ground paprika,True,False
+1178,tamarind pulp,True,False
+1179,tomatoes in puree,True,False
+1180,baby lima bean,True,False
+1181,green chili salsa,True,False
+1182,lemon gelatin,True,False
+1183,crawfish tail,True,False
+1184,udon noodle,True,False
+1185,double-acting baking powder,False,False
+1186,dry lentil,True,False
+1187,tap water,True,False
+1188,pudding,True,True
+1189,rock salt,True,False
+1190,cherry juice,True,False
+1191,duck,True,False
+1192,instant brown rice,False,False
+1193,solid pack pumpkin,True,False
+1194,pomegranate,True,True
+1195,cornbread stuffing mix,True,False
+1196,creme de menthe,True,False
+1197,fuji apple,True,False
+1198,lobster meat,True,False
+1199,malibu rum,True,False
+1200,cheddar,True,False
+1201,fat free egg substitute,True,False
+1202,tempeh,True,False
+1203,tiny new potato,True,False
+1204,white chocolate baking square,True,False
+1205,corn tortilla chip,True,False
+1206,dry buttermilk,True,False
+1207,dry peanut,True,False
+1208,spicy mustard,True,False
+1209,baking chocolate,True,False
+1210,fava bean,True,False
+1211,parmigiano,True,False
+1212,soybean,True,True
+1213,white creme de cacao,True,False
+1214,french fry,True,False
+1215,preserved lemon,True,False
+1216,splenda sugar blend for baking,True,False
+1217,unsulphured molasses,True,False
+1218,filet of beef,True,False
+1219,sweet cherry,True,True
+1220,swordfish steak,True,False
+1221,duck breast,True,False
+1222,stone ground mustard,True,False
+1223,stout beer,True,False
+1224,albacore tuna,True,True
+1225,cream sherry,True,False
+1226,seasoned flour,True,False
+1227,hearts of palm,True,False
+1228,miracle whip light,True,False
+1229,passion fruit,True,True
+1230,quick-cooking barley,False,False
+1231,wasabi,True,True
+1232,blackstrap molasses,True,False
+1233,pomegranate molasses,True,False
+1234,instant coffee crystal,True,False
+1235,red snapper,True,False
+1236,reduced-fat mozzarella cheese,False,False
+1237,semolina flour,True,False
+1238,anaheim chili,True,False
+1239,fontina,True,False
+1240,strong black coffee,True,False
+1241,vanilla pod,True,False
+1242,apricot brandy,True,False
+1243,calvado,True,False
+1244,camembert cheese,True,True
+1245,dill pickle slice,True,False
+1246,lebanese cucumber,True,False
+1247,maraschino cherry juice,True,False
+1248,marmalade,True,False
+1249,unsweetened raspberry,True,False
+1250,yellow sweet onion,True,False
+1251,ancho chily,True,False
+1252,flax seed oil,True,False
+1253,lite olive oil,True,False
+1254,pickling cucumber,True,False
+1255,pink salmon,True,True
+1256,cheese whiz,True,False
+1257,risotto rice,True,False
+1258,white cabbage,True,True
+1259,white cornmeal,True,False
+1260,baby clam,True,False
+1261,mild chili powder,True,False
+1262,shrimp paste,True,False
+1263,top round steak,True,False
+1264,chicken thigh fillet,True,False
+1265,guar gum,True,False
+1266,madras curry powder,True,False
+1267,orange gelatin,True,False
+1268,unsweetened strawberry,True,False
+1269,french vanilla instant pudding,True,False
+1270,mexican-style tomato,False,False
+1271,panir,True,False
+1272,ro-tel tomato,False,False
+1273,sorghum flour,True,False
+1274,basil sprig,True,False
+1275,chive onion cream cheese,True,False
+1276,corned beef brisket,True,False
+1277,flaked sea salt,True,False
+1278,pink grapefruit,True,False
+1279,strawberry ice cream,True,False
+1280,canning salt,True,False
+1281,carob powder,True,False
+1282,hot salsa,True,False
+1283,lobster tail,True,False
+1284,fenugreek leaf,True,False
+1285,grain rice,True,False
+1286,haddock fillet,True,False
+1287,london broil beef,True,False
+1288,no-salt-added tomato sauce,False,False
+1289,smoked mozzarella cheese,True,False
+1290,thick slab bacon,True,False
+1291,szechuan peppercorn,True,False
+1292,mung bean sprout,True,False
+1293,sugar-free instant chocolate pudding mix,False,False
+1294,halibut steak,True,False
+1295,ketjap manis,True,False
+1296,quick oatmeal,True,False
+1297,tri-color spiral pasta,False,False
+1298,english mustard,True,False
+1299,red radish,True,False
+1300,vanilla bean paste,True,False
+1301,dry penne pasta,True,False
+1302,fat cottage cheese,True,False
+1303,brazil nut,True,True
+1304,hot green chili pepper,True,False
+1305,mandarin orange section,True,False
+1306,amarula cream liqueur,True,False
+1307,black cardamom pod,True,False
+1308,ground pecan,True,False
+1309,habanero,True,False
+1310,italian-style stewed tomato,False,False
+1311,raspberry gelatin powder,True,False
+1312,suet,True,False
+1313,urad dal,True,False
+1314,white hominy,True,False
+1315,cream cheese spread,True,False
+1316,orange flower water,True,False
+1317,potato flour,True,False
+1318,sweet italian sausage link,True,False
+1319,crisp bacon,True,False
+1320,head of garlic,True,False
+1321,pineapple with juice,False,False
+1322,celeriac,True,False
+1323,chocolate milk,True,False
+1324,currant jelly,True,False
+1325,halloumi cheese,True,False
+1326,sugar-free maple syrup,False,False
+1327,english pea,True,False
+1328,mineral water,True,False
+1329,reduced-calorie margarine,False,False
+1330,bocconcini,True,False
+1331,bottled clam juice,True,False
+1332,condensed chicken broth,True,False
+1333,espresso coffee,True,False
+1334,herb stuffing mix,True,False
+1335,rabbit,True,True
+1336,blood orange,True,False
+1337,cooking wine,True,False
+1338,corkscrew macaroni,True,False
+1339,tagliatelle pasta noodle,True,False
+1340,lemon yogurt,True,False
+1341,mahi mahi fillet,True,False
+1342,scallion top,True,False
+1343,skim milk powder,True,False
+1344,sushi rice,True,False
+1345,coffee bean,True,False
+1346,gram flour,True,False
+1347,instant chicken bouillon,True,False
+1348,jalapeno jack cheese,True,False
+1349,lamb loin chop,True,False
+1350,purple cabbage,True,False
+1351,sun-dried tomato pesto,False,False
+1352,instant lemon pudding,True,False
+1353,mesclun,True,False
+1354,cabbage leaf,True,False
+1355,instant lemon pudding mix,True,False
+1356,italian stewed tomato,True,False
+1357,pre-shredded mozzarella cheese,False,False
+1358,white sauce,True,False
+1359,converted rice,True,False
+1360,mcintosh apple,False,False
+1361,aged cheddar cheese,True,False
+1362,brown mustard seed,True,False
+1363,brown sugar substitute,True,False
+1364,endive,True,True
+1365,rump steak,True,False
+1366,sweet basil leaf,True,False
+1367,sweet vermouth,True,False
+1368,bing cherry,True,False
+1369,cherry brandy,True,True
+1370,creme de cassis,True,False
+1371,farmer cheese,True,False
+1372,reduced-fat milk,False,False
+1373,yellow tomato,True,False
+1374,grape leaf,True,False
+1375,spanish olive,True,False
+1376,stevia powder,True,False
+1377,boursin cheese,True,False
+1378,chicken fillet,True,False
+1379,hot chili powder,True,False
+1380,mozzarella string cheese,True,False
+1381,pernod,True,False
+1382,quaker oat,True,False
+1383,ras el hanout spice mix,True,False
+1384,sea bass fillet,True,False
+1385,unsifted all-purpose flour,False,False
+1386,black coffee,True,False
+1387,cheese spread,True,False
+1388,cherry gelatin,True,False
+1389,chocolate graham cracker,True,False
+1390,chocolate pudding,True,False
+1391,garlic-flavored crouton,False,False
+1392,marinated artichoke,True,False
+1393,red salmon,True,False
+1394,reduced fat margarine,True,False
+1395,season-all salt,False,False
+1396,ginger juice,True,False
+1397,tomatoes with mild green chily,True,False
+1398,black walnut,True,True
+1399,leaf lettuce,True,False
+1400,red cayenne pepper,True,False
+1401,reduced fat graham cracker crust,True,False
+1402,solid white tuna,True,False
+1403,tomatoes with basil oregano and garlic,True,False
+1404,beef top round steak,True,True
+1405,cayenne pepper sauce,True,False
+1406,channa dal,True,False
+1407,chocolate instant pudding,True,False
+1408,firm silken tofu,True,False
+1409,instant butterscotch pudding mix,True,False
+1410,minute tapioca,True,False
+1411,sweet sherry,True,False
+1412,sausage meat,True,False
+1413,yellow potato,True,False
+1414,cavatappi pasta,True,False
+1415,clementine,True,True
+1416,instant espresso,True,False
+1417,nicoise olive,True,False
+1418,salt water,True,False
+1419,shell macaroni,True,False
+1420,tuna in vegetable oil,True,False
+1421,velveeta reduced fat cheese product,True,False
+1422,watercress leaf,True,False
+1423,beef bouillon powder,True,False
+1424,center cut pork chop,True,False
+1425,pork roast,True,False
+1426,riesling wine,True,False
+1427,cannellini,True,False
+1428,citrus-infused vodka,False,False
+1429,dry pinto bean,True,False
+1430,liquid smoke flavoring,True,False
+1431,plain soymilk,True,False
+1432,smoked cheddar cheese,True,False
+1433,tabasco brand chipotle pepper sauce,True,False
+1434,tamarind juice,True,False
+1435,baked corn tortilla chip,True,False
+1436,french mustard,True,False
+1437,full-fat milk,False,False
+1438,hot red chili pepper,True,False
+1439,sirloin tip roast,True,False
+1440,tiger shrimp,True,False
+1441,coriander seed,True,False
+1442,kale leaf,True,False
+1443,kumara,True,False
+1444,melon,True,True
+1445,seitan,True,False
+1446,serrano chili pepper,True,False
+1447,spearmint,True,True
+1448,summer savory,True,True
+1449,sweet bell pepper,True,False
+1450,file powder,True,False
+1451,green chilis,False,False
+1452,tuna in olive oil,True,False
+1453,wonton skin,True,False
+1454,albacore tuna in water,True,False
+1455,chocolate pudding mix,True,False
+1456,vegan butter,True,False
+1457,fine sugar,True,False
+1458,ground rosemary,True,False
+1459,instant nonfat dry milk powder,True,False
+1460,sour cherry,True,True
+1461,tangerine juice,True,False
+1462,trout,True,False
+1463,pumpkin pie filling,True,False
+1464,solid white tuna in water,True,False
+1465,turkey kielbasa,True,False
+1466,celery heart,True,False
+1467,green zucchini,True,True
+1468,lemon twist,True,False
+1469,mango powder,True,False
+1470,mostaccioli pasta,True,False
+1471,sugar-free strawberry gelatin,False,False
+1472,vegetable bouillon granule,True,False
+1473,red raspberry,True,True
+1474,beef sirloin steak,True,False
+1475,black vinegar,True,False
+1476,broccoli rabe,True,False
+1477,fleur de sel,True,False
+1478,ham slice,True,False
+1479,porridge oat,True,False
+1480,reduced-fat monterey jack cheese,False,False
+1481,soy margarine,True,False
+1482,vanilla flavor instant pudding and pie filling mix,True,False
+1483,bottled lemon juice,True,False
+1484,brown basmati rice,True,False
+1485,buttermilk baking mix,True,False
+1486,citron,True,False
+1487,corn niblet,True,False
+1488,garlic oil,True,False
+1489,head romaine lettuce,True,False
+1490,jaggery,True,False
+1491,light muscovado sugar,True,False
+1492,mozzarella ball,True,False
+1493,red beet,True,False
+1494,tart green apple,True,False
+1495,cellophane noodle,True,False
+1496,fryer chicken,True,False
+1497,garlic head,True,False
+1498,racks of lamb,True,False
+1499,star fruit,True,True
+1500,turkey meat,True,False
+1501,head broccoli,True,False
+1502,hot mustard,True,False
+1503,jasmine rice,True,False
+1504,mexican-style stewed tomato,False,False
+1505,custard,True,False
+1506,green creme de menthe,True,False
+1507,ground fenugreek,True,False
+1508,ground hazelnut,True,False
+1509,mexican chili powder,True,False
+1510,pecan nut,True,False
+1511,white distilled vinegar,True,False
+1512,za atar spice mix,True,False
+1513,broad bean,True,True
+1514,chard leaf,True,False
+1515,chayote,True,True
+1516,graham cracker square,True,False
+1517,heinz chili sauce,True,False
+1518,heinz ketchup,True,False
+1519,process american cheese,True,False
+1520,sweet white onion,True,False
+1521,tonic water,True,False
+1522,wondra flour,True,False
+1523,broccoli stem,True,False
+1524,cooking onion,True,False
+1525,crawfish,True,False
+1526,golden rum,True,False
+1527,hing,True,False
+1528,key lime,True,False
+1529,leaf thyme,True,False
+1530,spinach fettuccine,True,False
+1531,dark sweet cherry,True,False
+1532,ener-g egg substitute,False,False
+1533,hazelnut-flavored liqueur,False,False
+1534,red grapefruit,True,False
+1535,sweet apple,True,False
+1536,trout fillet,True,False
+1537,beef eye round,True,False
+1538,cashew piece,True,False
+1539,chat masala,True,False
+1540,chicken fat,True,False
+1541,light chunk tuna in water,True,False
+1542,lime leaf,True,False
+1543,round steak,True,False
+1544,short rib of beef,True,False
+1545,chunk pineapple,True,False
+1546,country ham,True,False
+1547,kumquat,True,True
+1548,miniature phyllo cup,True,False
+1549,rose wine,True,True
+1550,tiny pea,True,False
+1551,velveeta mexican cheese,True,False
+1552,carob chip,True,False
+1553,chocolate bar,True,False
+1554,masala,True,False
+1555,spanish peanut,True,False
+1556,broccoli coleslaw mix,True,False
+1557,celery flake,True,False
+1558,garlic flake,True,False
+1559,light cheddar cheese,True,False
+1560,marzipan,True,True
+1561,red chili sauce,True,False
+1562,swede,True,True
+1563,alum,True,False
+1564,boston lettuce leaf,True,False
+1565,brown button mushroom,True,False
+1566,colby,True,False
+1567,passion fruit pulp,True,False
+1568,snow pea pod,True,False
+1569,cubanelle pepper,True,False
+1570,distilled water,True,False
+1571,firm tomato,True,False
+1572,lemon juice concentrate,True,False
+1573,masa harina flour,True,False
+1574,other pasta,True,False
+1575,prosciutto ham,True,False
+1576,anjou pear,True,False
+1577,apple brandy,True,True
+1578,avocado oil,True,False
+1579,broccoli slaw mix,True,False
+1580,carrot juice,True,False
+1581,chipotle hot sauce,True,False
+1582,edam cheese,True,False
+1583,head of broccoli,True,False
+1584,honeydew,True,False
+1585,powdered saffron,True,False
+1586,dark creme de cacao,True,False
+1587,gold medal all-purpose flour,False,False
+1588,instant beef bouillon,True,False
+1589,lea perrins worcestershire sauce,True,False
+1590,smooth cashew butter,True,False
+1591,unsweetened pineapple chunk,True,False
+1592,unsweetened soymilk,True,False
+1593,white raisin,True,False
+1594,frisee,True,False
+1595,morel,True,False
+1596,mortadella,True,False
+1597,non-dairy topping,False,False
+1598,nonfat cottage cheese,True,False
+1599,anise,True,True
+1600,chinese wine,True,False
+1601,fat free tortilla,True,False
+1602,gluten free baking powder,True,False
+1603,green chile,True,False
+1604,israeli couscous,True,False
+1605,tomatoes with jalapeno,True,False
+1606,vegemite,True,False
+1607,angel flake coconut,True,False
+1608,butter lettuce leaf,True,False
+1609,cranberry juice concentrate,True,False
+1610,ginger beer,True,False
+1611,low-fat swiss cheese,False,False
+1612,red sweet pepper,True,False
+1613,tabasco jalapeno sauce,True,False
+1614,tuna fish,True,False
+1615,white pepper powder,True,False
+1616,butterscotch pudding mix,True,False
+1617,chocolate-covered coffee bean,False,False
+1618,corn tortilla strip,True,False
+1619,non-dairy milk substitute,False,False
+1620,fast-rising active dry yeast,False,False
+1621,lamb fillet,True,False
+1622,lamb stew meat,True,False
+1623,mild paprika,True,False
+1624,oil-cured black olive,False,False
+1625,ricotta,True,False
+1626,strawberry syrup,True,False
+1627,canola oil cooking spray,True,False
+1628,epazote,True,True
+1629,i can t believe it s not butter spread,False,False
+1630,plum jam,True,False
+1631,tomatoes with garlic,True,False
+1632,beef liver,True,False
+1633,curly-leaf parsley,False,False
+1634,floury potato,True,False
+1635,greek oregano,True,False
+1636,muesli,True,False
+1637,nigella seed,True,True
+1638,rotelle pasta,True,False
+1639,turkey carcass,True,False
+1640,bulgur wheat,True,False
+1641,plain gelatin,True,False
+1642,puff pastry shell,True,False
+1643,sweet marsala wine,True,False
+1644,green chili sauce,True,False
+1645,passion fruit juice,True,False
+1646,pink bean,True,False
+1647,red tomato,True,False
+1648,salt cod fish,True,False
+1649,soft taco-size flour tortilla,False,False
+1650,sultana raisin,True,False
+1651,sweet corn,True,False
+1652,tomatoes with basil,True,False
+1653,yellow hominy,True,False
+1654,ancho chili,True,False
+1655,bechamel sauce,True,False
+1656,farina,True,False
+1657,jumbo egg,True,False
+1658,pappardelle pasta,True,False
+1659,rice paper sheet,True,False
+1660,san marzano tomato,True,False
+1661,swanson chicken broth,True,False
+1662,top round beef,True,False
+1663,ground celery seed,True,False
+1664,instant banana pudding mix,True,False
+1665,kosher dill pickle,True,False
+1666,low-fat margarine,False,False
+1667,lychee,True,False
+1668,pork sausage link,True,False
+1669,smoked kielbasa,True,False
+1670,sweetened strawberry,True,False
+1671,wheat english muffin,True,False
+1672,grey poupon dijon mustard,False,False
+1673,hot chicken broth,True,False
+1674,nonfat beef broth,True,False
+1675,soft silken tofu,True,False
+1676,southern style hash brown potato,True,False
+1677,sweet kernel corn,True,False
+1678,wheat flour tortilla,True,False
+1679,broccoli cut,True,False
+1680,buckwheat groat,True,False
+1681,chocolate graham cracker crumb,True,False
+1682,light vanilla soymilk,True,False
+1683,marjoram leaf,True,False
+1684,sirloin tip steak,True,False
+1685,fennel leaf,True,False
+1686,habanero sauce,True,False
+1687,inch graham cracker crust,True,False
+1688,other sweet onion,True,False
+1689,rice paper,True,False
+1690,semisweet vegan chocolate chip,True,False
+1691,turkey breast tenderloin,True,False
+1692,bonito flake,True,False
+1693,coriander sprig,True,False
+1694,fat-free sugar-free instant vanilla pudding mix,False,False
+1695,french vanilla ice cream,True,False
+1696,lamb stock,True,False
+1697,liquid stevia,True,False
+1698,mango puree,True,False
+1699,serrano ham,True,False
+1700,sweet pickle juice,True,False
+1701,szechwan pepper,True,False
+1702,tart cooking apple,True,False
+1703,tomatillo salsa,True,False
+1704,absolut citron vodka,True,False
+1705,beef cube,True,False
+1706,beef rib,True,False
+1707,bisquick reduced-fat baking mix,False,False
+1708,brewer s yeast,True,False
+1709,gemelli pasta,True,False
+1710,gluten flour,True,False
+1711,light ricotta cheese,True,False
+1712,no-added-salt tomato paste,False,False
+1713,raspberry vodka,True,False
+1714,red bliss potato,True,False
+1715,romaine leaf,True,False
+1716,bucatini pasta,True,False
+1717,carbonated water,True,False
+1718,celery top,True,False
+1719,fat-free parmesan cheese,False,False
+1720,hunts tomato sauce,True,False
+1721,kohlrabi,True,True
+1722,liver,True,False
+1723,parma ham,True,False
+1724,pink grapefruit juice,True,False
+1725,ponzu sauce,True,False
+1726,yellow rice,True,False
+1727,chocolate flavor instant pudding and pie filling mix,True,False
+1728,head iceberg lettuce,True,False
+1729,kikkoman soy sauce,True,False
+1730,kirby cucumber,True,False
+1731,low fat mozzarella,True,False
+1732,red maraschino cherry,True,False
+1733,sorrel,True,True
+1734,vegetarian baked bean,True,False
+1735,yellow zucchini,True,True
+1736,cream cheese with chive,True,False
+1737,fermented black bean,True,False
+1738,ground sumac,True,False
+1739,hot italian sausage link,True,False
+1740,instant tea,True,False
+1741,mild sausage,True,False
+1742,ricotta salata,True,False
+1743,solid shortening,True,False
+1744,spanish rice,True,False
+1745,stewing chicken,True,False
+1746,sun-dried tomato paste,False,False
+1747,tomatoes with onion and garlic,True,False
+1748,vegetarian ground beef,True,False
+1749,compressed yeast cake,True,False
+1750,dry marsala wine,True,False
+1751,herb seasoning mix,True,False
+1752,jelly bean,True,False
+1753,quail,True,True
+1754,quick-rising yeast,False,False
+1755,soya milk,True,False
+1756,split red lentil,True,False
+1757,vegan parmesan cheese,True,False
+1758,white corn tortilla,True,False
+1759,cut okra,True,False
+1760,hazelnut oil,True,False
+1761,parmesan-romano cheese mix,False,False
+1762,quark,True,False
+1763,raspberries in light syrup,True,False
+1764,sweet n low,True,False
+1765,acini di pepe pasta,True,False
+1766,amaretti cooky,True,False
+1767,bean thread noodle,True,False
+1768,candied lemon peel,True,False
+1769,graham cracker crumb crust,True,False
+1770,light soya sauce,True,False
+1771,low-fat vanilla ice cream,False,False
+1772,medium-dry sherry,False,False
+1773,pimento pepper,True,False
+1774,sugar-free orange gelatin,False,False
+1775,venison steak,True,False
+1776,wheat gluten,True,False
+1777,adzuki bean,True,True
+1778,asian pear,True,False
+1779,dry white vermouth,True,False
+1780,fruit chutney,True,False
+1781,instant vanilla flavor pudding and pie filling,True,False
+1782,mild curry paste,True,False
+1783,seedless orange,True,False
+1784,yucca root,True,False
+1785,candied citron peel,True,False
+1786,country-style dijon mustard,False,False
+1787,jello instant vanilla pudding mix,True,False
+1788,nam pla,True,False
+1789,yellow cherry tomato,True,False
+1790,cake yeast,True,False
+1791,clam broth,True,False
+1792,curacao,True,False
+1793,deli corned beef,True,False
+1794,distilled vinegar,True,False
+1795,hickory flavored barbecue sauce,True,False
+1796,karo light corn syrup,True,False
+1797,low-sodium tomato sauce,False,False
+1798,onion ring,True,False
+1799,plain white flour,True,False
+1800,queso blanco,True,False
+1801,treacle,True,False
+1802,tuna in oil,True,False
+1803,bay shrimp,True,False
+1804,black currant,True,True
+1805,bottled chili sauce,True,False
+1806,cashew half,True,False
+1807,demi-glace,False,False
+1808,dry parsley flake,True,False
+1809,italian pork sausage,True,False
+1810,low-fat monterey jack cheese,False,False
+1811,mango pulp,True,False
+1812,minute white rice,False,False
+1813,red onion ring,True,False
+1814,blackberrie,False,False
+1815,buffalo mozzarella,True,False
+1816,dry marsala,True,False
+1817,green plantain,True,False
+1818,inch corn tortilla,True,False
+1819,instant espresso coffee powder,True,False
+1820,italian sweet sausage,True,False
+1821,quince,True,True
+1822,black caviar,True,False
+1823,black treacle,True,False
+1824,bottom round roast,True,False
+1825,braeburn apple,True,False
+1826,dill leaf,True,False
+1827,dry dill weed,True,False
+1828,fat-free cream cheese,False,False
+1829,honey graham cracker,True,False
+1830,low-fat granola,False,False
+1831,low-sodium tomato,False,False
+1832,peach yogurt,True,False
+1833,sweet red wine,True,False
+1834,tomatoes seasoned with basil garlic oregano,True,False
+1835,zinfandel,True,False
+1836,bottom round steak,True,False
+1837,chunky applesauce,True,False
+1838,ground mixed spice,True,False
+1839,iceberg lettuce leaf,True,False
+1840,instant coconut cream pudding mix,True,False
+1841,low-fat parmesan cheese,False,False
+1842,peach brandy,True,False
+1843,sweet milk,True,False
+1844,white meat chicken,True,False
+1845,yellow capsicum,True,False
+1846,baby rocket,True,False
+1847,banana chip,True,False
+1848,creamed spinach,True,False
+1849,guava,True,True
+1850,half half light cream,True,False
+1851,ice cream sandwich,True,False
+1852,italian-style tomato sauce,False,False
+1853,red currant,True,True
+1854,calf liver,True,False
+1855,curly endive lettuce,True,False
+1856,gumbo file,True,False
+1857,herring fillet,True,False
+1858,hickory smoke salt,True,False
+1859,lamb cutlet,True,False
+1860,lemon pudding mix,True,False
+1861,masa corn flour,True,False
+1862,pheasant,True,True
+1863,prosciutto di parma,True,False
+1864,shelled pistachio,True,False
+1865,vegan sour cream,True,False
+1866,vegetarian worcestershire sauce,True,False
+1867,agar-agar,False,False
+1868,bread and butter pickle,True,False
+1869,chunk light tuna,True,False
+1870,erythritol,True,False
+1871,japanese soy sauce,True,False
+1872,mahi mahi,True,False
+1873,polska kielbasa,True,False
+1874,strawberries in syrup,True,False
+1875,strawberry puree,True,False
+1876,sugar-free lemon gelatin,False,False
+1877,white chocolate baking bar,True,False
+1878,ajwain,True,False
+1879,cinnamon graham cracker,True,False
+1880,garlic-flavored olive oil,False,False
+1881,glutinous rice,True,False
+1882,hard cheese,True,False
+1883,hickory liquid smoke,True,False
+1884,lemon balm,True,True
+1885,lemon flavor instant pudding and pie filling,True,False
+1886,peppermint,True,True
+1887,quick-cooking rice,False,False
+1888,red miso,True,False
+1889,tomatoe,False,False
+1890,asadero cheese,True,False
+1891,bottled water,True,False
+1892,dark cooking chocolate,True,False
+1893,duck fat,True,False
+1894,firm butter,True,False
+1895,leaf basil,True,False
+1896,oregano flake,True,False
+1897,oregano sprig,True,False
+1898,sage sprig,True,False
+1899,shoulder lamb chop,True,False
+1900,vanilla pudding,True,False
+1901,vegetarian refried bean,True,False
+1902,white crab meat,True,False
+1903,white zinfandel wine,True,False
+1904,alphabet pasta,True,False
+1905,artichoke bottom,True,False
+1906,dry curd cottage cheese,True,False
+1907,dry fettuccine,True,False
+1908,head lettuce,True,False
+1909,herbed crouton,True,False
+1910,hot chili bean,True,False
+1911,instant bouillon granule,True,False
+1912,jeera powder,True,False
+1913,low-fat sharp cheddar cheese,False,False
+1914,vegan cream cheese,True,False
+1915,wheat bread flour,True,False
+1916,barbecued pork,True,False
+1917,broiler chicken,True,False
+1918,dry green lentil,True,False
+1919,garlic juice,True,False
+1920,gooseberry,True,True
+1921,guava juice,True,False
+1922,guava nectar,True,False
+1923,libby s pumpkin,True,False
+1924,mint chocolate chip ice cream,True,False
+1925,other dry white wine,False,False
+1926,premade puff pastry,True,False
+1927,rich chicken broth,True,False
+1928,stone ground dijon mustard,True,False
+1929,yeast cake,True,False
+1930,boiling onion,True,False
+1931,cauliflower head,True,False
+1932,fat-free sugar-free instant chocolate pudding mix,False,False
+1933,low-sodium instant chicken bouillon granule,False,False
+1934,quick-cooking brown rice,False,False
+1935,sparkling apple cider,True,False
+1936,tasso,True,False
+1937,very strong coffee,True,False
+1938,white cranberry juice,True,False
+1939,best foods mayonnaise,True,False
+1940,dark muscovado sugar,True,False
+1941,dry lasagna noodle,True,False
+1942,dry tapioca,True,False
+1943,german mustard,True,False
+1944,green asparagus,True,False
+1945,green mango,True,False
+1946,homogenized milk,True,False
+1947,orange curacao,True,False
+1948,parsley stem,True,False
+1949,powdered soy protein concentrate,True,False
+1950,red plum,True,False
+1951,regular margarine,True,False
+1952,arbol chile,True,False
+1953,beef shank,True,False
+1954,cachaca,True,False
+1955,english mustard powder,True,False
+1956,herb-seasoned stuffing cube,False,False
+1957,instant white chocolate pudding and pie filling mix,True,False
+1958,light miso,True,False
+1959,mixed baby lettuces and spring green,True,False
+1960,pasta noodle,True,False
+1961,refined flour,True,False
+1962,sage sausage,True,False
+1963,baby eggplant,True,False
+1964,back bacon,True,False
+1965,berbere,True,False
+1966,butter pecan ice cream,True,False
+1967,chicken gizzard,True,False
+1968,chunk tuna,True,False
+1969,english walnut,True,False
+1970,fat free cheese,True,False
+1971,garlic-infused olive oil,False,False
+1972,goose,True,False
+1973,o brien potato,True,False
+1974,preserved gingerroot,True,False
+1975,purple plum,True,False
+1976,reduced-fat swiss cheese,False,False
+1977,ruby red grapefruit juice,True,False
+1978,sirloin beef,True,False
+1979,smoked link sausage,True,False
+1980,sourdough baguette,True,False
+1981,white creme de menthe,True,False
+1982,aleppo pepper,True,False
+1983,brown sugar twin,True,False
+1984,chocolate piece,True,False
+1985,crayfish tail,True,False
+1986,dry parmesan cheese,True,False
+1987,eye of round roast,True,False
+1988,fine semolina,True,False
+1989,key lime zest,True,False
+1990,lardon,True,False
+1991,orange blossom honey,True,False
+1992,pearl tapioca,True,False
+1993,shoe peg corn,True,False
+1994,sweetened lime juice,True,False
+1995,truffle,True,True
+1996,whipped butter,True,False
+1997,yellow lentil,True,False
+1998,baby dill pickle,True,False
+1999,beef suet,True,False
+2000,bottled garlic,True,False
+2001,chicory lettuce,True,False
+2002,cos lettuce,True,False
+2003,glutinous-rice flour,False,False
+2004,orange-infused vodka,False,False
+2005,sugar-free vanilla pudding mix,False,False
+2006,aioli,True,False
+2007,cassava,True,True
+2008,copha,True,False
+2009,english seedless cucumber,True,False
+2010,ground beef round,True,False
+2011,hard alcoholic cider,True,False
+2012,heads of garlic,True,False
+2013,mandarin oranges in light syrup,False,False
+2014,pak choi,True,False
+2015,pepperidge farm herb stuffing,True,False
+2016,pistachio pudding mix,True,False
+2017,rome apple,True,False
+2018,smoked streaky bacon,True,False
+2019,sticky rice,True,False
+2020,sweet wine,True,False
+2021,white wine worcestershire sauce,True,False
+2022,bacardi rum,False,False
+2023,bulbs of garlic,True,False
+2024,butterscotch pudding,True,False
+2025,cake-and-pastry flour,False,False
+2026,coconut butter,True,False
+2027,converted white rice,True,False
+2028,greek feta cheese,True,False
+2029,lemon low fat yogurt,True,False
+2030,mandarin oranges in juice,True,False
+2031,morton lite salt,True,False
+2032,palm oil,True,False
+2033,sorghum,True,True
+2034,spanish olive oil,True,False
+2035,tandoori paste,True,False
+2036,bacardi light rum,True,False
+2037,chicken stove top stuffing mix,True,False
+2038,cinnamon bark,True,False
+2039,green coriander,True,False
+2040,lemon-flavored vodka,False,False
+2041,nacho cheese flavored tortilla chip,True,False
+2042,prune baby food,True,False
+2043,pudding mix,True,False
+2044,realemon juice,True,False
+2045,russet baking potato,True,False
+2046,swiss chard leaf,True,False
+2047,tri-tip steak,False,False
+2048,tuna fillet,True,False
+2049,vegan sugar,True,False
+2050,amaranth flour,True,False
+2051,annatto seed,True,False
+2052,besan,True,False
+2053,black salt,True,False
+2054,chihuahua cheese,True,False
+2055,colored miniature marshmallow,True,False
+2056,dark soya sauce,True,False
+2057,garbanzo flour,True,False
+2058,jalapeno chily,True,False
+2059,lamb steak,True,False
+2060,liquid sweetener,True,False
+2061,lovage,True,True
+2062,no-salt-added chicken broth,False,False
+2063,pureed chipotle chile,True,False
+2064,spanish rice mix,True,False
+2065,spinach tortilla,True,False
+2066,sweet creamy butter,True,False
+2067,top round roast,True,False
+2068,unsweetened blueberry,True,False
+2069,fat-free miracle whip,False,False
+2070,garlic scape,True,False
+2071,jamaican rum,True,False
+2072,light mozzarella cheese,True,False
+2073,low-sodium worcestershire sauce,False,False
+2074,mild green chili,True,False
+2075,mint sauce,True,False
+2076,sazon goya con culantro y achiote,True,False
+2077,strawberry slice,True,False
+2078,tuna in brine,True,False
+2079,turkey tenderloin,True,False
+2080,amaranth,True,True
+2081,anisette,True,False
+2082,borlotti bean,True,False
+2083,cheesecake flavor instant pudding and pie filling mix,True,False
+2084,chicken flavor instant bouillon,True,False
+2085,coleman s dry mustard,True,False
+2086,dill pickle spear,True,False
+2087,fat buttermilk,True,False
+2088,full-bodied red wine,False,False
+2089,grain wheat flour,True,False
+2090,lavender blossom,True,False
+2091,low-fat graham cracker,False,False
+2092,lowfat swiss cheese,False,False
+2093,mild cheese,True,False
+2094,nonfat chicken broth,True,False
+2095,pineapple in juice,True,False
+2096,pomegranate syrup,True,False
+2097,strawberry cream cheese,True,False
+2098,strong white flour,True,False
+2099,sumaq,True,False
+2100,vegetarian bacon,False,False
+2101,white asparagus,True,False
+2102,white grape,True,False
+2103,beef rump roast,True,False
+2104,chipotle salsa,True,False
+2105,dark chili powder,True,False
+2106,hazelnut syrup,True,False
+2107,imitation bacon bit,True,False
+2108,kasseri cheese,True,False
+2109,lamb rib chop,True,False
+2110,light raisin,True,False
+2111,plum preserve,True,False
+2112,skim evaporated milk,True,False
+2113,sugar-free instant pudding mix,False,False
+2114,sweetened raspberry,True,False
+2115,white chocolate curl,True,False
+2116,absolut vodka,False,False
+2117,almond flavored liqueur,True,False
+2118,bagel chip,True,False
+2119,beef short rib,True,False
+2120,campanelle pasta,True,False
+2121,danish blue cheese,True,False
+2122,dry oregano leaf,True,False
+2123,dry white bean,True,False
+2124,garlic sausage,True,False
+2125,gem lettuce,True,False
+2126,green maraschino cherry,True,False
+2127,lox,True,False
+2128,minute brown rice,True,False
+2129,pork rib,True,False
+2130,stew beef chunk,True,False
+2131,teff flour,True,False
+2132,uncle ben s converted brand rice,True,False
+2133,vegan cheese,True,False
+2134,yellow miso,True,False
+2135,absinthe,True,False
+2136,armagnac,True,False
+2137,beef bones with marrow,True,False
+2138,cabbage and carrot coleslaw mix,True,False
+2139,candied pecan,True,False
+2140,chicken legs-thigh,False,False
+2141,french lentil,True,False
+2142,homemade chicken broth,True,False
+2143,lecithin granule,True,False
+2144,low-moisture part-skim mozzarella cheese,False,False
+2145,mange-touts pea,False,False
+2146,papaya nectar,True,False
+2147,parboiled rice,True,False
+2148,pie apple,True,False
+2149,sugar-free raspberry gelatin,False,False
+2150,tri-colored pasta,False,False
+2151,tri-tip roast,False,False
+2152,wild rice mix,True,False
+2153,absolut mandarin vodka,False,False
+2154,agar-agar flake,False,False
+2155,amaretti,True,False
+2156,banana cream instant pudding,True,False
+2157,black soy sauce,True,False
+2158,cherry vodka,False,False
+2159,chili bean paste,True,False
+2160,grey poupon mustard,True,False
+2161,haricot bean,True,False
+2162,kasuri methi,True,False
+2163,lemon balm leaf,True,False
+2164,low-fat flour tortilla,False,False
+2165,mushroom stem,True,False
+2166,powdered clove,True,False
+2167,prune puree,True,False
+2168,radiatore,True,False
+2169,satay sauce,True,False
+2170,scalloped potatoes mix,True,False
+2171,sharp american cheese,True,False
+2172,soy mozzarella cheese,True,False
+2173,tangerine peel,True,False
+2174,chicken giblet,True,False
+2175,crawfish tail meat,True,False
+2176,ginger syrup,True,False
+2177,glace ginger,True,False
+2178,grouper,True,True
+2179,ham shank,True,False
+2180,hazelnut meal,True,False
+2181,iodized salt,True,False
+2182,live lobster,True,False
+2183,red paprika,True,False
+2184,silver beet,True,False
+2185,squid ring,True,False
+2186,tomatoes in tomato puree,True,False
+2187,tripe,True,False
+2188,apricot gelatin,True,False
+2189,baby swiss cheese,True,False
+2190,bitter melon,True,False
+2191,bottom round beef roast,True,False
+2192,calimyrna fig,True,False
+2193,chai tea teabag,True,False
+2194,chinese chili sauce,True,False
+2195,dry english-style mustard,False,False
+2196,dry linguine,True,False
+2197,fried tofu,True,False
+2198,fructose,True,False
+2199,head of lettuce,True,False
+2200,low fat sweetened condensed milk,False,False
+2201,low-fat ricotta,False,False
+2202,red caviar,True,False
+2203,sugar-free vanilla ice cream,False,False
+2204,ahi tuna,True,False
+2205,ahi tuna steak,True,False
+2206,boil-in-the-bag rice,False,False
+2207,cantaloupe ball,True,False
+2208,chestnut puree,True,False
+2209,chinese mustard,True,True
+2210,chocolate soymilk,True,False
+2211,coconut milk powder,True,False
+2212,dark chicken meat,True,False
+2213,dry coconut powder,True,False
+2214,low-sodium tamari,False,False
+2215,lowfat parmesan cheese,True,False
+2216,major grey chutney,False,False
+2217,melon ball,True,False
+2218,mint flake,True,False
+2219,orgeat syrup,True,False
+2220,peach gelatin,True,False
+2221,pot barley,True,False
+2222,prune juice,True,False
+2223,purple potato,True,False
+2224,rack of lamb,True,False
+2225,raspberry pie filling,True,False
+2226,smoked trout,True,False
+2227,sweet potato puree,True,False
+2228,tomato with juice,True,False
+2229,beef dripping,True,False
+2230,beef top loin steak,True,False
+2231,black lentil,True,False
+2232,blackberry brandy,True,True
+2233,candied walnut,True,False
+2234,carnaroli rice,True,False
+2235,chicken gumbo soup,True,False
+2236,country sausage,True,False
+2237,dry tarragon,True,False
+2238,half and half milk,True,False
+2239,hash brown patty,True,False
+2240,kasha,True,False
+2241,light cherry pie filling,True,False
+2242,low-fat creme fraiche,False,False
+2243,medium-grain white rice,False,False
+2244,milk mozzarella,True,False
+2245,orange sweet bell pepper,True,False
+2246,pandan leaf,True,False
+2247,peppadew pepper,True,False
+2248,pesto sauce mix,False,False
+2249,powdered instant coffee,True,False
+2250,radish sprout,True,False
+2251,red cherry,True,False
+2252,red table wine,True,False
+2253,seedless european cucumber,True,False
+2254,sour dill pickle,True,False
+2255,sugar-free vanilla pudding,False,False
+2256,watermelon ball,True,False
+2257,watermelon juice,True,False
+2258,agar,True,True
+2259,au gratin potato,True,False
+2260,baby green pea,True,False
+2261,baker s unsweetened chocolate square,True,False
+2262,buttermilk biscuit mix,True,False
+2263,cheddar cheese cube,True,False
+2264,coconut meat,True,False
+2265,dry cider,True,False
+2266,dry sweetener,True,False
+2267,duck leg,True,False
+2268,enriched flour,True,False
+2269,funghi porcini,True,False
+2270,ganache,True,False
+2271,jumbo lump crab meat,True,False
+2272,kashmiri chili powder,True,False
+2273,low-fat soymilk,False,False
+2274,mango salsa,True,False
+2275,methi seed,True,False
+2276,no-salt-added ketchup,False,False
+2277,no-salt-added stewed tomato,False,False
+2278,pawpaw,True,True
+2279,polish kielbasa,True,False
+2280,raspberry puree,True,False
+2281,reduced-fat baking mix,False,False
+2282,vegan worcestershire sauce,True,False
+2283,ajinomoto,True,False
+2284,black grape,True,False
+2285,braunschweiger sausage,True,False
+2286,fat-free american cheese,False,False
+2287,fat-free sugar-free vanilla pudding mix,False,False
+2288,firm margarine,True,False
+2289,french vanilla pudding mix,True,False
+2290,german chocolate,True,False
+2291,grapefruit section,True,False
+2292,guava paste,True,False
+2293,hard apple cider,True,False
+2294,huckleberry,True,False
+2295,instant milk,True,False
+2296,lettuce green,True,False
+2297,low-fat alfredo sauce,False,False
+2298,non-fat soymilk,False,False
+2299,nuoc nam,True,False
+2300,reduced-fat coconut milk,False,False
+2301,reduced-fat ricotta cheese,False,False
+2302,sago,True,False
+2303,sazon goya with coriander and annatto,False,False
+2304,spanish olives with pimento,True,False
+2305,sponge cake finger,True,False
+2306,tangerine zest,True,False
+2307,tarragon sprig,True,False
+2308,besan flour,True,False
+2309,black rice,True,False
+2310,chicken breast halve,True,False
+2311,chili bean sauce,True,False
+2312,corona beer,True,False
+2313,dry-roasted cashew,False,False
+2314,duckling,True,False
+2315,jonathan apple,True,False
+2316,lime twist,True,False
+2317,low-fat small-curd cottage cheese,False,False
+2318,low-sodium tomato juice,False,False
+2319,lumpia skin,True,False
+2320,manila clam,True,False
+2321,piri-piri,False,False
+2322,powdered cumin,False,False
+2323,rice powder,True,False
+2324,skim milk ricotta cheese,True,False
+2325,sugar-free lime gelatin,False,False
+2326,sweet apple cider,True,False
+2327,tomatoes with green pepper and onion,True,False
+2328,wheat baguette,True,False
+2329,white radish,True,False
+2330,avocado dip,True,False
+2331,baharat,True,False
+2332,barbecued chicken,False,False
+2333,brown and serve sausage,True,False
+2334,center cut pork loin roast,True,False
+2335,chinese eggplant,True,False
+2336,diet ginger ale,True,False
+2337,french-style ladyfinger cooky,False,False
+2338,galangal root,True,False
+2339,globe eggplant,True,False
+2340,green banana,True,False
+2341,hazelnut extract,True,False
+2342,jell-o chocolate pudding and pie filling,False,False
+2343,low-sodium chickpea,False,False
+2344,mango rum,False,False
+2345,mexican rice,True,False
+2346,pitted prune,True,False
+2347,roll of pork sausage,True,False
+2348,rose essence,True,False
+2349,shoestring potato,True,False
+2350,sour pitted cherry,True,False
+2351,tiny pasta,True,False
+2352,tofutti better-than-cream-cheese,False,False
+2353,vital wheat gluten flour,True,False
+2354,watermelon rind,True,False
+2355,ancho pepper,True,False
+2356,buckwheat noodle,True,False
+2357,capers in salt,True,False
+2358,chinese hot mustard,True,False
+2359,chocolate-covered peanut,False,False
+2360,cranberry bean,True,False
+2361,egg tomato,False,False
+2362,extra-firm silken tofu,False,False
+2363,grapefruit zest,True,False
+2364,green serrano chily,True,False
+2365,italian plum,True,False
+2366,lamb rack,True,False
+2367,low calorie sweetener,False,False
+2368,low-carb flour tortilla,False,False
+2369,low-sodium beef bouillon cube,False,False
+2370,maraschino juice,True,False
+2371,mild chile,True,False
+2372,mini sweet pepper,False,False
+2373,miniature bagel,True,False
+2374,pear half,True,False
+2375,pickling lime,True,False
+2376,pierogi,False,False
+2377,poppy seed filling,True,False
+2378,ragu tomato sauce,True,False
+2379,rosemary needle,True,False
+2380,sockeye salmon,True,True
+2381,southern style hash brown,True,False
+2382,spaetzle noodle,True,False
+2383,stewing lamb,True,False
+2384,vanilla custard powder,True,False
+2385,white corn kernel,True,False
+2386,alfredo sauce mix,True,False
+2387,baharat aka middle east mixed spices the mix,False,False
+2388,barley malt,True,False
+2389,black plum,True,False
+2390,budweiser beer,True,False
+2391,caesar-flavor crouton,False,False
+2392,chai tea,True,False
+2393,chocolate-covered graham cracker cooky,False,False
+2394,cranberry jelly,True,False
+2395,date sugar,True,False
+2396,fennel powder,True,False
+2397,garlic alfredo sauce,False,False
+2398,ground ancho chili pepper,True,False
+2399,kirsch liqueur,True,False
+2400,passion fruit nectar,True,False
+2401,pecan meal,True,False
+2402,peri-peri,False,False
+2403,recaito,False,False
+2404,red pear tomato,True,False
+2405,shin beef,True,False
+2406,smoked tofu,True,False
+2407,sweet mustard,False,False
+2408,swordfish fillet,True,False
+2409,turkey slice,True,False
+2410,yellow sweet bell pepper,False,False
+2411,amaretti cookie,False,False
+2412,beef burger,True,False
+2413,carnation instant milk,True,False
+2414,champignon mushroom,True,False
+2415,cheesecake flavor instant pudding and pie filling,True,False
+2416,cherrystone clam,True,False
+2417,dry basil leaf,True,False
+2418,dry thyme leaf,True,False
+2419,fat free sugar-free instant cheesecake pudding mix,False,False
+2420,imitation vanilla,True,False
+2421,low-fat coconut milk,False,False
+2422,low-fat peanut butter,False,False
+2423,lowfat margarine,True,False
+2424,mexican tomato,True,False
+2425,nestle sweetened condensed milk,True,False
+2426,peppar vodka,False,False
+2427,pepperidge farm stuffing,True,False
+2428,picante salsa,True,False
+2429,pineapple rum,True,False
+2430,raclette cheese,False,False
+2431,red swiss chard,True,False
+2432,regular grind coffee,False,False
+2433,soft shelled crab,True,False
+2434,soymilk powder,True,False
+2435,tofutti sour cream,True,False
+2436,tomato chutney,True,False
+2437,valencia orange,True,False
+2438,vegan egg replacer powder,True,False
+2439,white poppy seed,True,False
+2440,baked tofu,True,False
+2441,barley malt syrup,True,False
+2442,berry blue gelatin mix,False,False
+2443,cherries in syrup,True,False
+2444,comte cheese,True,True
+2445,dark semi-sweet chocolate,False,False
+2446,gluten-free vanilla extract,False,False
+2447,granola bar,True,False
+2448,hunts tomato paste,True,False
+2449,instant decaffeinated coffee,True,False
+2450,lamb neck,True,False
+2451,lemon basil,True,False
+2452,lemon leaf,True,False
+2453,light cheese,True,False
+2454,low sodium salt,False,False
+2455,mission fig,True,False
+2456,non-alcoholic beer,False,False
+2457,peach vodka,False,False
+2458,peppermint ice cream,True,False
+2459,rainbow trout,True,True
+2460,ready-to-serve beef broth,False,False
+2461,red shallot,True,False
+2462,red-leaf lettuce,False,False
+2463,reduced-sodium worcestershire sauce,False,False
+2464,salsa fresca,True,False
+2465,soy protein,False,False
+2466,strong coffee,True,False
+2467,tomato bisque soup,False,False
+2468,vegetarian oyster sauce,True,False
+2469,asparagus cut,False,False
+2470,baby tomato,True,False
+2471,beef round tip steak,True,False
+2472,cajun-style stewed tomato,False,False
+2473,chocolate chip ice cream,False,False
+2474,choy sum,True,False
+2475,converted long grain rice,True,False
+2476,cultured buttermilk,False,False
+2477,dessert apple,True,False
+2478,dry northern white bean,False,False
+2479,epazote leaf,True,False
+2480,fat free vanilla ice cream,False,False
+2481,fine graham cracker crumb,True,False
+2482,fish bouillon cube,True,False
+2483,green cabbage head,True,False
+2484,ground annatto seed,True,False
+2485,heads of cabbage,True,False
+2486,hellmanns mayonnaise,False,False
+2487,light vanilla ice cream,True,False
+2488,mafalda pasta,True,False
+2489,morton tender quick salt,False,False
+2490,other brandy,False,False
+2491,pear brandy,True,True
+2492,powdered thyme,True,False
+2493,rapini,True,True
+2494,reduced-sodium soy sauce,False,False
+2495,rice pilaf mix,False,False
+2496,soy cheddar cheese,True,False
+2497,spinach souffle,True,False
+2498,stone ground wheat flour,True,False
+2499,sweet rice,True,False
+2500,unsweetened apple cider,True,False
+2501,vegetarian chili,False,False
+2502,yellow rice mix,False,False
+2503,bean thread,True,False
+2504,breadfruit,True,True
+2505,cactus piece,True,False
+2506,chinese barbecue pork,True,False
+2507,chinkiang vinegar,False,False
+2508,elderberry,True,True
+2509,foie gra,True,False
+2510,hash browns with onions and pepper,True,False
+2511,hawaiian sea salt,True,False
+2512,instant dry milk powder,True,False
+2513,instant flour,True,False
+2514,leaf oregano,True,False
+2515,maytag blue cheese,True,False
+2516,mexican tomato sauce,True,False
+2517,meyer s dark rum,True,False
+2518,mixed cheese,True,False
+2519,no-salt-added black bean,False,False
+2520,pickled cucumber,True,False
+2521,red pesto sauce,False,False
+2522,remoulade sauce,True,False
+2523,smoked back bacon,True,False
+2524,taco bell home originals thick n chunky salsa,True,False
+2525,unsweetened plain yogurt,False,False
+2526,aged white cheddar cheese,True,False
+2527,angelica,True,True
+2528,barberry,True,False
+2529,black mission fig,True,False
+2530,black soybean,True,False
+2531,california walnut,True,False
+2532,celery powder,False,False
+2533,crab,True,True
+2534,ditali pasta,True,False
+2535,framboise liqueur,True,False
+2536,french s mustard,True,False
+2537,green ginger,True,False
+2538,green olives in brine,True,False
+2539,ground habanero chile pepper,True,False
+2540,honey syrup,True,False
+2541,instant tea powder,False,False
+2542,italian-style tomato paste,False,False
+2543,jell-o pudding mix,False,False
+2544,lactose-free milk,False,False
+2545,large-curd cottage cheese,False,False
+2546,lemon grass,False,False
+2547,lemon peel strip,True,False
+2548,loin lamb,True,False
+2549,low-carb tortilla,False,False
+2550,low-fat tofu,False,False
+2551,meyer lemon zest,True,False
+2552,nonfat cheddar cheese,False,False
+2553,panang curry paste,True,False
+2554,paneer cheese,True,False
+2555,pinto beans with jalapeno pepper,False,False
+2556,planters pecan,True,False
+2557,processed cheese spread,True,False
+2558,pudding rice,True,False
+2559,quorn piece,False,False
+2560,raspberry sauce,True,False
+2561,reduced-fat firm tofu,False,False
+2562,ro-tel tomatoes with pepper,False,False
+2563,sherry,True,False
+2564,skinned chicken breast,False,False
+2565,taleggio,True,False
+2566,unsmoked bacon,True,False
+2567,vegan mozzarella cheese,False,False
+2568,weetabix,False,False
+2569,wheat spiral pasta,False,False
+2570,white mustard seed,True,False
+2571,yellow corn grits,False,False
+2572,amchoor powder,True,False
+2573,baby turnip,True,False
+2574,banana instant pudding,True,False
+2575,bittersweet chocolate piece,True,False
+2576,black fig,True,False
+2577,chai tea mix,True,False
+2578,chicken portion,True,False
+2579,chive blossom,True,False
+2580,concord grape,True,False
+2581,dragee,True,False
+2582,dry sunflower seed,False,False
+2583,ginger marmalade,False,False
+2584,ginger wine,False,False
+2585,green chili powder,False,False
+2586,heads cauliflower,True,False
+2587,idaho baking potato,True,False
+2588,kewra essence,True,False
+2589,low-sodium tomato paste,False,False
+2590,mandarin segment,False,False
+2591,nopale,True,False
+2592,plum jelly,False,False
+2593,pumpkin flesh,True,False
+2594,purslane,True,True
+2595,reduced-sugar orange marmalade,False,False
+2596,salad potato,True,False
+2597,seedless black grape,False,False
+2598,smoked trout fillet,True,False
+2599,soymilk lite,False,False
+2600,sugar-free instant butterscotch pudding mix,False,False
+2601,thick soy sauce,True,False
+2602,thin soy sauce,True,False
+2603,unsweetened mixed berry,True,False
+2604,vanilla custard,True,False
+2605,veal demi-glace,False,False
+2606,white chocolate bark,False,False
+2607,winter savory,True,True
+2608,yellow pear tomato,True,False
