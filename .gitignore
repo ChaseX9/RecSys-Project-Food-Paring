@@ -10,13 +10,12 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-# Données (régénérables, voir README)
+# Data: raw Food.com / FlavorGraph files and the local DB stay out of git.
+# data/processed/ IS versioned so teammates get the data with a simple git pull.
 data/raw/*
-data/processed/*
-data/app.db
 !data/raw/.gitkeep
-!data/processed/.gitkeep
+data/app.db
 
-# Modèles entraînés
+# Trained models
 artifacts/*
 !artifacts/.gitkeep
