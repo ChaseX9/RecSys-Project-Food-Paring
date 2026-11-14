@@ -1,0 +1,20 @@
+# normalized form -> canonical form (extend using data/processed/stats.json)
+granulated sugar: sugar
+white sugar: sugar
+caster sugar: sugar
+superfine sugar: sugar
+confectioners sugar: powdered sugar
+icing sugar: powdered sugar
+scallion: green onion
+spring onion: green onion
+all-purpose flour: flour
+all purpose flour: flour
+plain flour: flour
+white flour: flour
+extra virgin olive oil: olive oil
+extra-virgin olive oil: olive oil
+cilantro leaf: cilantro
+fresh cilantro: cilantro
+coriander leaf: cilantro
+garbanzo bean: chickpea
+capsicum: bell pepper
