@@ -1,0 +1,22 @@
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Données (régénérables, voir README)
+data/raw/*
+data/processed/*
+data/app.db
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Modèles entraînés
+artifacts/*
+!artifacts/.gitkeep
