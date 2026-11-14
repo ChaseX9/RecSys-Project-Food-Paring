@@ -23,3 +23,9 @@ split:
 
 profiles:
   positive_rating_gt: 4                # "rating > 4" from the Week 1 plan (i.e. 5/5)
+
+flavorgraph:
+  enabled: true
+  dir: data/raw/flavorgraph
+  nodes_file: nodes_191120.csv
+  edges_file: edges_191120.csv

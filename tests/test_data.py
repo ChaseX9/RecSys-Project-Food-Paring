@@ -51,3 +51,22 @@ def test_profiles_use_train_only_and_l1():
     # train = recipes 0,1,2 -> ingredients {0:1, 1:2, 2:1}; recipes 3,4 (val/test) are ignored
     assert np.allclose(P[0].toarray().ravel(), [0.25, 0.5, 0.25])
     assert np.allclose(np.asarray(P.sum(axis=1)).ravel(), 1.0)
+
+
+def test_flavor_features():
+    import scipy.sparse as sp
+    from src.data.flavor import build_compound_matrix, jaccard_similarity, map_vocab_to_flavorgraph
+
+    vocab = pd.DataFrame({"ingredient_id": [0, 1, 2], "name": ["tomato", "basil", "sugar"],
+                          "n_recipes": [10, 8, 5]})
+    nodes = pd.DataFrame({"node_id": [10, 11, 12, 100, 101, 102],
+                          "name": ["tomato", "fresh_basil", "milk", "c1", "c2", "c3"],
+                          "node_type": ["ingredient"] * 3 + ["compound"] * 3})
+    edges = pd.DataFrame({"id_1": [10, 10, 11, 11], "id_2": [100, 101, 101, 102],
+                          "edge_type": ["ingr-fcomp"] * 4})
+    mapping = map_vocab_to_flavorgraph(vocab, nodes)
+    assert set(mapping["name"]) == {"tomato", "basil"}  # "fresh_basil" -> "basil", sugar absent
+    mat, compounds = build_compound_matrix(mapping, nodes, edges, 3)
+    assert mat.shape == (3, 3) and mat[2].nnz == 0
+    sim = jaccard_similarity(mat).toarray()
+    assert np.isclose(sim[0, 1], 1 / 3) and sim[0, 0] == 0
