@@ -97,6 +97,18 @@ def leave_last_out_split(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def mark_train_recipes(recipes: pd.DataFrame, interactions: pd.DataFrame) -> pd.DataFrame:
+    """Add is_train_recipe: True if the recipe has at least one train interaction.
+
+    Graph statistics (e.g. NPMI) must only use these recipes, otherwise recipes that appear
+    only in val/test leak into the graph.
+    """
+    train_ids = set(interactions.loc[interactions["split"] == "train", "recipe_id"])
+    out = recipes.copy()
+    out["is_train_recipe"] = out["recipe_id"].isin(train_ids)
+    return out
+
+
 # main
 def run(config_path: str | Path = "configs/data.yaml", root: str | Path = ".") -> dict:
     root = Path(root).resolve()
@@ -124,6 +136,10 @@ def run(config_path: str | Path = "configs/data.yaml", root: str | Path = ".") -
     stats["sparsity"] = float(1 - len(inter) / (stats["n_users"] * stats["n_recipes"]))
     stats["positive_share_train"] = float(
         (inter.loc[inter["split"] == "train", "rating"] > cfg["profiles"]["positive_rating_gt"]).mean())
+
+    recipes = mark_train_recipes(recipes, inter)
+    stats["train_recipes"] = int(recipes["is_train_recipe"].sum())
+    stats["recipes_only_in_val_test"] = int((~recipes["is_train_recipe"]).sum())
 
     print("[4/6] User profiles (train only)...")
     n_ing = len(vocab_df)

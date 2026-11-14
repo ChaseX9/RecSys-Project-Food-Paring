@@ -88,3 +88,14 @@ def test_major_ingredients_are_not_split():
     }
     for raw, expected in cases.items():
         assert normalize_ingredient(raw, aliases) == expected, raw
+
+
+def test_train_recipe_mask_excludes_val_test_only_recipes():
+    from src.data.build import mark_train_recipes
+
+    recipes = pd.DataFrame({"recipe_id": [1, 2, 3], "name": list("abc")})
+    inter = pd.DataFrame({"recipe_id": [1, 2, 3, 3], "split": ["train", "val", "test", "train"]})
+    marked = mark_train_recipes(recipes, inter)
+    # recipe 2 only appears in validation -> must not be used for graph statistics
+    assert marked["is_train_recipe"].tolist() == [True, False, True]
+    assert "is_train_recipe" not in recipes.columns  # input untouched

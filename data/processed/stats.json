@@ -25,6 +25,8 @@
   "n_recipes": 226978,
   "sparsity": 0.9998305834176646,
   "positive_share_train": 0.7598499489448789,
+  "train_recipes": 222552,
+  "recipes_only_in_val_test": 4426,
   "users_with_empty_profile": 334,
   "flavorgraph": {
     "flavorgraph_matched_ingredients": 2288,
