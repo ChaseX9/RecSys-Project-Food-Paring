@@ -1,8 +1,8 @@
 {
   "recipes_raw": 522517,
-  "ingredients_distinct_before_filter": 5949,
-  "ingredients_vocab_size": 2613,
-  "recipes_kept": 484910,
+  "ingredients_distinct_before_filter": 5945,
+  "ingredients_vocab_size": 2609,
+  "recipes_kept": 484913,
   "interactions_raw": 1401982,
   "rating_distribution_raw": {
     "0": 76248,
@@ -13,25 +13,25 @@
     "5": 1012082
   },
   "interactions_after_drop_zero": 1325734,
-  "interactions_on_kept_recipes": 1229837,
-  "interactions_after_kcore": 972104,
-  "recipes_with_interactions": 226977,
+  "interactions_on_kept_recipes": 1229848,
+  "interactions_after_kcore": 972113,
+  "recipes_with_interactions": 226978,
   "split_sizes": {
-    "train": 921546,
-    "val": 25279,
-    "test": 25279
+    "train": 921553,
+    "val": 25280,
+    "test": 25280
   },
-  "n_users": 25279,
-  "n_recipes": 226977,
-  "sparsity": 0.9998305775379192,
-  "positive_share_train": 0.7598524653137229,
+  "n_users": 25280,
+  "n_recipes": 226978,
+  "sparsity": 0.9998305834176646,
+  "positive_share_train": 0.7598499489448789,
   "users_with_empty_profile": 334,
   "flavorgraph": {
-    "flavorgraph_matched_ingredients": 2291,
-    "flavorgraph_matched_share_recipe_weighted": 0.9758591753329321,
+    "flavorgraph_matched_ingredients": 2288,
+    "flavorgraph_matched_share_recipe_weighted": 0.9766051151838616,
     "ingredients_with_compounds": 275,
-    "ingredients_with_compounds_share_recipe_weighted": 0.47797377193949575,
-    "top100_ingredients_with_compounds": 52,
+    "ingredients_with_compounds_share_recipe_weighted": 0.501373933078268,
+    "top100_ingredients_with_compounds": 54,
     "n_compounds": 1610,
     "chemical_similarity_nonzero_pairs": 63590
   },
@@ -43,6 +43,10 @@
     {
       "name": "sugar",
       "n_recipes": 127472
+    },
+    {
+      "name": "garlic",
+      "n_recipes": 120470
     },
     {
       "name": "egg",
@@ -57,12 +61,8 @@
       "n_recipes": 104234
     },
     {
-      "name": "garlic clove",
-      "n_recipes": 83990
-    },
-    {
       "name": "olive oil",
-      "n_recipes": 72763
+      "n_recipes": 89139
     },
     {
       "name": "milk",
@@ -87,10 +87,6 @@
     {
       "name": "baking powder",
       "n_recipes": 39354
-    },
-    {
-      "name": "garlic",
-      "n_recipes": 37085
     },
     {
       "name": "green onion",
@@ -155,6 +151,10 @@
     {
       "name": "cilantro",
       "n_recipes": 22834
+    },
+    {
+      "name": "celery",
+      "n_recipes": 22503
     }
   ],
   "rarest_kept_ingredients": [

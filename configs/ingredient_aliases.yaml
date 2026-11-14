@@ -11,10 +11,11 @@ all-purpose flour: flour
 all purpose flour: flour
 plain flour: flour
 white flour: flour
-extra virgin olive oil: olive oil
+virgin olive oil: olive oil  # "extra" is stripped as a descriptor before aliases apply
 extra-virgin olive oil: olive oil
 cilantro leaf: cilantro
-fresh cilantro: cilantro
 coriander leaf: cilantro
 garbanzo bean: chickpea
 capsicum: bell pepper
+garlic clove: garlic
+purple onion: red onion

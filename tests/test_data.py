@@ -70,3 +70,21 @@ def test_flavor_features():
     assert mat.shape == (3, 3) and mat[2].nnz == 0
     sim = jaccard_similarity(mat).toarray()
     assert np.isclose(sim[0, 1], 1 / 3) and sim[0, 0] == 0
+
+
+def test_major_ingredients_are_not_split():
+    from src.data.ingredients import load_aliases
+    aliases = load_aliases("configs/ingredient_aliases.yaml")
+    cases = {
+        "extra virgin olive oil": "olive oil",
+        "extra-virgin olive oil": "olive oil",
+        "olive oil": "olive oil",
+        "chickpeas": "chickpea",
+        "garbanzo beans": "chickpea",
+        "garlic cloves": "garlic",
+        "garlic": "garlic",
+        "purple onion": "red onion",
+        "fresh cilantro": "cilantro",
+    }
+    for raw, expected in cases.items():
+        assert normalize_ingredient(raw, aliases) == expected, raw

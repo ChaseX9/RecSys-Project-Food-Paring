@@ -22,7 +22,7 @@ DESCRIPTORS = {
 _IRREGULAR = {"leaves": "leaf", "halves": "half", "loaves": "loaf", "tomatoes": "tomato",
               "potatoes": "potato", "mangoes": "mango", "avocados": "avocado"}
 _KEEP_S = {"molasses", "hummus", "couscous", "asparagus", "grits", "swiss", "watercress",
-           "cress", "citrus", "lemongrass", "bass", "series", "species", "chickpeas"}
+           "cress", "citrus", "lemongrass", "bass", "series", "species"}
 
 
 def parse_r_vector(value) -> list[str]:
