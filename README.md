@@ -22,6 +22,7 @@ A recommender system that answers the everyday question *"I have X, what goes we
 - **Personalization:** user preference vector built from highly rated recipes.
 - **Explanations:** short reasons for each recommendation (e.g. frequently paired together, shared aromatic compounds).
 
+
 ## Evaluation
 
 The evaluation harness (`src/eval/`) scores any recommender on held-out recipes and reports **NDCG@10**, **Recall@20**, HitRate@k and MRR.
@@ -57,3 +58,42 @@ print(evaluate_predictions(preds, setup.cases, ks=(10, 20)))         # {'ndcg@10
 ```
 
 Tests: `pytest tests/test_eval.py` (hand-computed metric values, mock predictions, anti-leakage checks).
+
+## Quick start
+
+1. Virtual Environment
+```bash
+# Windows
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# Linux or Mac
+python3 -m venv .venv
+source ./venv/bin/activate
+```
+
+2. Install Dependences
+```bash
+pip install -r requirements.txt
+```
+
+3. Build ingredient graph (NPMI + chemical)
+```bash
+python scripts/build_graph.py
+```
+
+4. Train NLGCL embeddings (~40 epochs, CPU is fine for 2.6k nodes)
+```bash
+python scripts/train_nlgcl.py --epochs 40 --device cpu
+# or GPU:
+python scripts/train_nlgcl.py --epochs 40 --device cuda
+```
+
+5. Recommend
+```bash
+python scripts/recommend.py salmon lemon --top-k 10
+python scripts/recommend.py chicken --allergies gluten dairy --diet vegetarian
+python scripts/recommend.py tomato basil --user-id 12345
+```
+
+
