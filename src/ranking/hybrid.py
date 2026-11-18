@@ -30,6 +30,14 @@ class RankingConfig:
     delta_cooc: float = 0.0
     emb_similarity: str = "cosine"   # "cosine" | "dot"
     normalize: bool = False          # per-query min-max of each component
+    # personalization (see src/data/rating_profiles.py)
+    pref_source: str = "frequency"   # frequency (5/5 only) | rating | embedding | hybrid (rating + embedding)
+    pref_mode: str = "additive"      # additive: + gamma*pref | multiplicative: pairing * (1 + gamma*pref)
+    neg_weight: float = 0.5          # weight of the "dislike" profile (rating source)
+    profile_shrink_k: float = 5.0    # pseudo-ratings pulling a user's mean toward the global mean
+    dislike_max_rating: float = 3.0  # only ratings <= this can count as a dislike
+    profile_conf_k: float = 10.0     # confidence = n_ratings / (n_ratings + k); 0 = no confidence scaling
+    profile_idf: bool = True         # down-weight ubiquitous ingredients in rating profiles
     top_k: int = 20
     # diet / allergy keyword filters, matched as whole words (optional plural s/es).
     # Compound words ("crabmeat", "soybean", ...) must be listed explicitly since
@@ -55,6 +63,8 @@ class RankingConfig:
         "chestnut": ["water"],
     })
 
+
+PREF_SOURCES = ("frequency", "rating", "embedding", "hybrid")
 
 MEAT_KEYWORDS = ("beef", "pork", "chicken", "lamb", "bacon", "ham", "sausage", "turkey",
                  "veal", "duck", "meat", "steak", "prosciutto", "salami",
@@ -101,15 +111,24 @@ class HybridRanker:
         user_ids: np.ndarray | None = None,
         config: RankingConfig | None = None,
         cooccurrence: sp.csr_matrix | None = None,
+        rating_profiles=None,
     ):
         self.cfg = config or RankingConfig()
         if self.cfg.emb_similarity not in ("cosine", "dot"):
             raise ValueError(f"emb_similarity must be cosine or dot, got {self.cfg.emb_similarity!r}")
-        self.emb = embeddings.astype(np.float32)
+        if self.cfg.pref_source not in PREF_SOURCES:
+            raise ValueError(f"pref_source must be one of {PREF_SOURCES}, got {self.cfg.pref_source!r}")
+        if self.cfg.pref_mode not in ("additive", "multiplicative"):
+            raise ValueError(f"pref_mode must be additive or multiplicative, got {self.cfg.pref_mode!r}")
+        if self.cfg.pref_source != "frequency" and rating_profiles is None:
+            raise ValueError(f"pref_source={self.cfg.pref_source!r} needs rating_profiles")
+        raw = embeddings.astype(np.float32)
+        norms = np.linalg.norm(raw, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        self.emb_unit = raw / norms                  # cosine space, used for user vectors
+        self.emb = raw
         if self.cfg.emb_similarity == "cosine":
-            norms = np.linalg.norm(self.emb, axis=1, keepdims=True)
-            norms[norms == 0] = 1.0
-            self.emb = self.emb / norms
+            self.emb = self.emb_unit
         self.cooc = None
         if cooccurrence is not None:
             self.cooc = cooccurrence.tocsr().astype(np.float32)
@@ -124,6 +143,50 @@ class HybridRanker:
         self.user_id_to_row = (
             {int(u): i for i, u in enumerate(user_ids)} if user_ids is not None else {}
         )
+        self.rating_profiles = rating_profiles
+        self.rating_row = {}
+        self.user_vecs = None
+        if rating_profiles is not None:
+            self.rating_row = {int(u): i for i, u in enumerate(rating_profiles.user_ids)}
+            if self.cfg.pref_source in ("embedding", "hybrid"):
+                self.user_vecs = rating_profiles.user_vectors(raw)
+
+    def preference(self, user_id) -> np.ndarray:
+        """Preference of ``user_id`` for every ingredient (zeros for an unknown user).
+
+        frequency: share of the ingredient in the user's 5/5 recipes (min-max scaled).
+        rating:    like - neg_weight * dislike, both min-max scaled (in [-neg_weight, 1]).
+        embedding: min-max scaled cosine between the user vector and each ingredient.
+        hybrid:    mean of rating and embedding.
+        rating / embedding / hybrid are multiplied by the user's confidence.
+        """
+        n = len(self.vocab)
+        zeros = np.zeros(n, dtype=np.float32)
+        if user_id is None:
+            return zeros
+        try:
+            uid = int(user_id)
+        except (TypeError, ValueError):
+            return zeros
+        src = self.cfg.pref_source
+        if src == "frequency":
+            row = self.user_id_to_row.get(uid)
+            if row is None or self.user_profiles is None:
+                return zeros
+            return _minmax(np.asarray(self.user_profiles.getrow(row).todense()).ravel().astype(np.float32))
+        row = self.rating_row.get(uid)
+        if row is None:
+            return zeros
+        rp = self.rating_profiles
+        parts = []
+        if src in ("rating", "hybrid"):
+            like = _minmax(np.asarray(rp.like.getrow(row).todense()).ravel().astype(np.float32))
+            dis = _minmax(np.asarray(rp.dislike.getrow(row).todense()).ravel().astype(np.float32))
+            parts.append(like - self.cfg.neg_weight * dis)
+        if src in ("embedding", "hybrid"):
+            u = self.user_vecs[row]
+            parts.append(_minmax(self.emb_unit @ u) if np.any(u) else zeros)
+        return (np.mean(parts, axis=0) * float(rp.confidence[row])).astype(np.float32)
 
     # ------------------------------------------------------------------ public
     def recommend(
@@ -154,12 +217,8 @@ class HybridRanker:
             if len(q_ids) > 1:
                 chem_score /= len(q_ids)
 
-        # preference score
-        pref_score = np.zeros(len(self.vocab), dtype=np.float32)
-        if user_id is not None and self.user_profiles is not None:
-            row = self.user_id_to_row.get(int(user_id))
-            if row is not None:
-                pref_score = np.asarray(self.user_profiles.getrow(row).todense()).ravel()
+        # preference score (already scaled, see preference())
+        pref_score = self.preference(user_id)
 
         # co-occurrence score = sum of log(1 + count) with the query (train recipes)
         cooc_score = np.zeros(len(self.vocab), dtype=np.float32)
@@ -167,15 +226,19 @@ class HybridRanker:
             cooc_score = np.asarray(self.cooc[q_ids].sum(axis=0)).ravel().astype(np.float32)
 
         if self.cfg.normalize:
-            emb_score, chem_score, pref_score, cooc_score = (
-                _minmax(x) for x in (emb_score, chem_score, pref_score, cooc_score))
+            emb_score, chem_score, cooc_score = (
+                _minmax(x) for x in (emb_score, chem_score, cooc_score))
 
-        score = (
+        pairing = (
             self.cfg.alpha_emb * emb_score
             + self.cfg.beta_chem * chem_score
-            + self.cfg.gamma_pref * pref_score
             + self.cfg.delta_cooc * cooc_score
         )
+        if self.cfg.pref_mode == "multiplicative":
+            # preference only re-orders plausible pairings: a poor pairing stays poor
+            score = pairing * (1.0 + self.cfg.gamma_pref * pref_score)
+        else:
+            score = pairing + self.cfg.gamma_pref * pref_score
 
         # hard filters
         ban = set(q_ids)
@@ -317,4 +380,22 @@ def load_ranker(
         profiles = sp.load_npz(processed_dir / "user_profiles.npz").tocsr()
         uids = np.load(processed_dir / "user_profile_ids.npy")
     cooc = train_cooccurrence(processed_dir) if config.delta_cooc else None
-    return HybridRanker(emb, vocab, chem, npmi, profiles, uids, config, cooccurrence=cooc)
+    rp = rating_profiles_for(processed_dir, config)
+    return HybridRanker(emb, vocab, chem, npmi, profiles, uids, config, cooccurrence=cooc,
+                        rating_profiles=rp)
+
+
+def rating_profiles_for(processed_dir: str | Path, config: RankingConfig):
+    """Rating-aware profiles when the config needs them (cached per settings), else None."""
+    if config.pref_source == "frequency":
+        return None
+    return _rating_profiles_cached(str(Path(processed_dir).resolve()), config.profile_shrink_k,
+                                   config.dislike_max_rating, config.profile_conf_k,
+                                   config.profile_idf)
+
+
+@lru_cache(maxsize=8)
+def _rating_profiles_cached(processed_dir: str, shrink_k: float, dislike_max: float, conf_k: float,
+                            use_idf: bool):
+    from src.data.rating_profiles import build_rating_profiles
+    return build_rating_profiles(processed_dir, shrink_k, dislike_max, conf_k, use_idf)

@@ -1,0 +1,19 @@
+# Personalization study: how should the user's ratings re-rank pairings?
+# Every variant overrides the `ranking` block of configs/model.yaml and is scored on the
+# same cases. Choose on `val`, report `test`.
+
+model_config: configs/model.yaml
+eval_config: configs/eval.yaml
+embeddings: artifacts/ingredient_embeddings.npy
+splits: [val, test]
+shuffle_seed: 0          # "shuffled user" control: same cases, user ids permuted
+
+variants:
+  no_personalization: {gamma_pref: 0.0}
+  frequency_additive: {pref_source: frequency, pref_mode: additive}     # former profile: 5/5 only, additive
+  rating_mult: {}                                                        # served: configs/model.yaml as is
+  rating_additive: {pref_mode: additive}                                 # without context gating
+  rating_idf: {profile_idf: true}                                        # level 1 with idf
+  rating_no_dislike: {neg_weight: 0.0}
+  embedding_mult: {pref_source: embedding}                               # level 2
+  hybrid_mult: {pref_source: hybrid}                                     # level 1 + 2

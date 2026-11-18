@@ -74,6 +74,24 @@ python scripts/ablations.py --max-cases 300    # quick run
 
 Trained variants are cached in `artifacts/ablations/<variant>/` (use `--retrain` to retrain them). Tables are written to `artifacts/eval/ablations_unseen_recipes_<split>.{json,md}`. Pick settings on `val`, report `test`.
 
+### Personalization (ratings 1-5)
+
+User profiles use **every train rating**, not only the 5/5 ones (`src/data/rating_profiles.py`):
+
+- **Centered, shrunk ratings:** `weight = rating - b_u`, where `b_u` is the user's mean rating pulled toward the global mean (4.69). A user who rates everything 5/5 (26% of users) still gets a positive profile; a 2/5 from a generous user becomes a dislike. Only ratings <= 3 can count as dislikes.
+- **Like / dislike profiles:** ingredients of liked recipes go to `like`, ingredients of disliked recipes go to `dislike`; `pref = like - 0.5 * dislike`.
+- **Confidence:** `n / (n + 10)`: a user with 5 ratings is trusted less than one with 50.
+- **Multiplicative gating:** `score = pairing * (1 + gamma * pref)`. The preference only re-orders plausible pairings: a baker's love of flour no longer pushes flour next to salmon.
+- **Level 2 (embedding user vector):** `pref_source: embedding | hybrid` builds the user vector in the NLGCL space (liked recipes minus disliked ones). Implemented and evaluated, not served (no gain on val).
+
+Settings: `ranking` block of `configs/model.yaml`. Study (val to choose, test to report, with a **shuffled-user control**: same cases with permuted user ids; the gap is the information that really comes from the user's tastes):
+
+```bash
+python scripts/eval_personalization.py                         # standard protocol
+python scripts/eval_personalization.py --config <copy of configs/personalization.yaml with eval_config: configs/eval_short_query.yaml>
+```
+`configs/eval_short_query.yaml` mimics real usage ("I have salmon"): 70% of the recipe is hidden, so the query is short and the user's taste has more room to matter.
+
 ## Quick start
 
 1. Virtual Environment
