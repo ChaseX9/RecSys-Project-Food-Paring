@@ -6,6 +6,7 @@ from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
 from . import db
+from .recommender import mock_recommend
 
 
 class InteractionIn(BaseModel):
@@ -19,6 +20,30 @@ class InteractionIn(BaseModel):
 class InteractionOut(BaseModel):
     id: int
     status: str = "logged"
+
+
+class RecommendIn(BaseModel):
+    user_id: str = Field(min_length=1, max_length=100)
+    ingredients: list[str] = Field(min_length=1)
+    top_k: int = Field(default=10, ge=1, le=50)
+    allergies: list[str] | None = None
+    diet: str | None = None
+
+
+class Recommendation(BaseModel):
+    rank: int
+    name: str
+    score: float
+    emb_score: float
+    chem_score: float
+    pref_score: float
+    explanation: str
+
+
+class RecommendOut(BaseModel):
+    query: list[str]
+    mock: bool = True
+    recommendations: list[Recommendation]
 
 
 def create_app(db_path: str | None = None) -> FastAPI:
@@ -44,6 +69,12 @@ def create_app(db_path: str | None = None) -> FastAPI:
     @app.get("/interactions")
     def get_interactions(user_id: str | None = None, limit: int = Query(100, ge=1, le=1000)):
         return db.list_interactions(path, user_id, limit)
+
+    @app.post("/recommend", response_model=RecommendOut)
+    def recommend(req: RecommendIn):
+        recs = mock_recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
+                              allergies=req.allergies, diet=req.diet)
+        return RecommendOut(query=req.ingredients, mock=True, recommendations=recs)
 
     return app
 
