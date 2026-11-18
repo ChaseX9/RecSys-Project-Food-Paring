@@ -5,7 +5,9 @@ Hard filters: allergies / diet / exclude query ingredients.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Sequence
 
@@ -20,15 +22,63 @@ class RankingConfig:
     beta_chem: float = 0.25
     gamma_pref: float = 0.15
     top_k: int = 20
-    # simple diet / allergy keyword filters (lowercase substrings)
+    # diet / allergy keyword filters, matched as whole words (optional plural s/es).
+    # Compound words ("crabmeat", "soybean", ...) must be listed explicitly since
+    # whole-word matching no longer catches them as substrings.
     allergy_keywords: dict[str, list[str]] = field(default_factory=lambda: {
-        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "couscous", "semolina"],
-        "dairy": ["milk", "butter", "cheese", "cream", "yogurt", "parmesan", "mozzarella", "cheddar"],
-        "nut": ["almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut", "peanut", "nut"],
-        "shellfish": ["shrimp", "crab", "lobster", "shellfish", "clam", "mussel", "oyster"],
+        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "couscous", "semolina",
+                   "breadcrumb", "cornbread", "buckwheat noodle", "soba"],
+        "dairy": ["milk", "butter", "cheese", "cream", "yogurt", "parmesan", "mozzarella", "cheddar",
+                  "buttermilk", "butterscotch", "cheesecake", "creamed", "bechamel"],
+        "nut": ["almond", "walnut", "pecan", "cashew", "pistachio", "hazelnut", "peanut", "nut",
+                "chestnut"],
+        "shellfish": ["shrimp", "crab", "lobster", "shellfish", "clam", "mussel", "oyster",
+                      "crabmeat", "crawfish", "crayfish"],
         "egg": ["egg"],
-        "soy": ["soy", "tofu", "edamame", "soymilk"],
+        "soy": ["soy", "tofu", "edamame", "soymilk", "soya", "soybean", "tofutti"],
     })
+    # keyword -> preceding words that make it a different product
+    # (e.g. "peanut butter" is not dairy, "water chestnut" is not a nut). Allergen
+    # safety is preserved by the other lists: "peanut butter" is still banned for
+    # "nut" via "peanut".
+    keyword_exceptions: dict[str, list[str]] = field(default_factory=lambda: {
+        "butter": ["peanut", "almond", "cashew", "coconut", "cocoa", "apple"],
+        "chestnut": ["water"],
+    })
+
+
+MEAT_KEYWORDS = ("beef", "pork", "chicken", "lamb", "bacon", "ham", "sausage", "turkey",
+                 "veal", "duck", "meat", "steak", "prosciutto", "salami",
+                 "hamburger", "duckling",
+                 "pancetta", "kielbasa", "lardon", "chorizo", "pepperoni", "liver",
+                 "goose", "quail", "pheasant", "rabbit", "venison")
+FISH_KEYWORDS = ("fish", "salmon", "tuna", "cod", "anchovy", "sardine", "trout", "shrimp",
+                 "crab", "lobster", "shellfish",
+                 "crabmeat", "crawfish", "crayfish", "catfish", "swordfish",
+                 "clam", "mussel", "scallop", "squid", "octopus", "oyster", "caviar",
+                 "halibut", "haddock", "sole", "sea bass", "snapper", "mahi mahi", "grouper",
+                 "flounder", "herring", "mackerel", "tilapia",
+                 "oyster sauce", "fish sauce")
+# animal-derived products that are neither meat nor fish but excluded for vegetarians
+VEGETARIAN_EXTRA_KEYWORDS = ("gelatin", "worcestershire sauce")
+
+
+@lru_cache(maxsize=None)
+def _keyword_regex(
+    keywords: tuple[str, ...],
+    exceptions: tuple[tuple[str, tuple[str, ...]], ...] = (),
+) -> re.Pattern:
+    """Compile one whole-word regex for ``keywords`` (plural s/es optional).
+
+    ``exceptions`` maps a keyword to preceding qualifiers that cancel the match
+    ("peanut" before "butter"). Cached: each keyword set is compiled once.
+    """
+    exc = dict(exceptions)
+    alts = []
+    for k in sorted(set(keywords), key=len, reverse=True):
+        guard = "".join(f"(?<!{re.escape(q)} )" for q in exc.get(k, ()))
+        alts.append(guard + re.escape(k))
+    return re.compile(r"\b(?:" + "|".join(alts) + r")(?:e?s)?\b")
 
 
 class HybridRanker:
@@ -148,41 +198,41 @@ class HybridRanker:
                         break
         return list(dict.fromkeys(ids))  # unique, order-preserving
 
+    def _match_keywords(self, keywords: Sequence[str]) -> set[int]:
+        """Ids of vocab names containing any keyword as a whole word."""
+        if not keywords:
+            return set()
+        exceptions = tuple(sorted(
+            (k, tuple(qs)) for k, qs in self.cfg.keyword_exceptions.items() if k in keywords
+        ))
+        pattern = _keyword_regex(tuple(keywords), exceptions)
+        return {idx for name, idx in self.name_to_id.items() if pattern.search(name)}
+
     def _allergy_ban(self, allergies: Sequence[str] | None) -> set[int]:
         if not allergies:
             return set()
         ban = set()
         for a in allergies:
             keys = self.cfg.allergy_keywords.get(a.lower(), [a.lower()])
-            for name, idx in self.name_to_id.items():
-                if any(k in name for k in keys):
-                    ban.add(idx)
+            ban |= self._match_keywords(keys)
         return ban
 
     def _diet_ban(self, diet: str | None) -> set[int]:
         if not diet:
             return set()
         diet = diet.lower()
-        ban = set()
-        meat = ["beef", "pork", "chicken", "lamb", "bacon", "ham", "sausage", "turkey",
-                "veal", "duck", "meat", "steak", "prosciutto", "salami"]
-        fish = ["fish", "salmon", "tuna", "cod", "anchovy", "sardine", "trout", "shrimp",
-                "crab", "lobster", "shellfish"]
+        meat = list(MEAT_KEYWORDS)
+        fish = list(FISH_KEYWORDS)
+        veg_extra = list(VEGETARIAN_EXTRA_KEYWORDS)
         dairy = self.cfg.allergy_keywords.get("dairy", [])
         egg = self.cfg.allergy_keywords.get("egg", [])
         if diet in ("vegan",):
-            for name, idx in self.name_to_id.items():
-                if any(k in name for k in meat + fish + dairy + egg + ["honey", "gelatin"]):
-                    ban.add(idx)
-        elif diet in ("vegetarian",):
-            for name, idx in self.name_to_id.items():
-                if any(k in name for k in meat + fish):
-                    ban.add(idx)
-        elif diet in ("pescatarian",):
-            for name, idx in self.name_to_id.items():
-                if any(k in name for k in meat):
-                    ban.add(idx)
-        return ban
+            return self._match_keywords(meat + fish + veg_extra + dairy + egg + ["honey"])
+        if diet in ("vegetarian",):
+            return self._match_keywords(meat + fish + veg_extra)
+        if diet in ("pescatarian",):
+            return self._match_keywords(meat)
+        return set()
 
 
 def load_ranker(
