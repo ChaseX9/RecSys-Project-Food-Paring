@@ -9,19 +9,22 @@ out_dir: artifacts/ablations     # embeddings of each trained variant (cached, n
 splits: [val, test]
 
 # Train-time variants: overrides on top of configs/model.yaml.
-# Keys: lambda_cl, n_groups, temperature, graph_alpha, epochs.
+# Keys: lambda_cl, n_groups, temperature, graph_alpha, epochs, lr.
 train_variants:
-  nlgcl: {}                        # reference model, configs/model.yaml as is
+  nlgcl: {}                        # reference model, configs/model.yaml as is (lambda_cl = 0.1)
   lightgcn: {lambda_cl: 0.0}       # innovation switched off: same encoder, no neighbor-layer CL
-  nlgcl_cl0.1: {lambda_cl: 0.1}    # contrastive loss with a weight that actually moves the gradients
+  nlgcl_cl1e-5: {lambda_cl: 1.0e-5}   # former setting: contrastive term too small to matter
   nlgcl_npmi_graph: {graph_alpha: 1.0}   # graph without chemical edges (NPMI only)
 
 # Rank-time variants: overrides on top of the `ranking` block of configs/model.yaml.
 rank_variants:
-  full: {}
+  full: {}                          # served configuration
+  no_emb: {alpha_emb: 0.0}          # is the GNN still useful next to co-occurrence?
+  no_cooc: {delta_cooc: 0.0}
   no_chem: {beta_chem: 0.0}
-  no_pref: {gamma_pref: 0.0}
-  emb_only: {beta_chem: 0.0, gamma_pref: 0.0}
+  with_pref: {gamma_pref: 0.1}      # personalization switched on
+  model_led: {alpha_emb: 0.6, beta_chem: 0.25, gamma_pref: 0.15, delta_cooc: 0.0, emb_similarity: dot}
+  emb_only: {alpha_emb: 1.0, beta_chem: 0.0, gamma_pref: 0.0, delta_cooc: 0.0, emb_similarity: dot}
 
 # Beyond-accuracy metrics (computed on the top-k lists)
 beyond_k: 10

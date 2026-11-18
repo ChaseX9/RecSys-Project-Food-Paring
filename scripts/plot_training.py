@@ -53,9 +53,11 @@ def main():
         ax.legend(fontsize=8)
 
         ax = axes[2]
-        ax.plot(vep, [r["val_ndcg@10"] for r in vh], label="val NDCG@10")
-        ax.plot(vep, [r["val_recall@20"] for r in vh], label="val Recall@20")
-        ax.set_title("Validation ranking metrics (hybrid ranker)")
+        if "val_emb_ndcg@10" in vh[0]:
+            ax.plot(vep, [r["val_emb_ndcg@10"] for r in vh], label="val NDCG@10, embedding only (selection)")
+        ax.plot(vep, [r["val_ndcg@10"] for r in vh], label="val NDCG@10, hybrid ranker")
+        ax.plot(vep, [r["val_recall@20"] for r in vh], label="val Recall@20, hybrid ranker", ls=":")
+        ax.set_title("Validation ranking metrics")
         ax.set_xlabel("epoch")
         ax.legend(fontsize=8)
 

@@ -7,8 +7,10 @@ recipes, see src/eval/protocol.py), never on test:
   train interaction, so their pairs are not used to build the graph: the loss measures
   generalization, not memorization. The same loss on a fixed sample of train edges gives a
   comparable train curve.
-- val NDCG@10: the evaluation harness on val cases with the hybrid ranker, i.e. exactly the
-  metric reported at the end. Used to keep the best epoch (early stopping).
+- val NDCG@10 of the embedding alone (dot product, ``val_emb_ndcg@10``): the quality of the
+  model itself, independent of the ranking weights. Used by default to keep the best epoch.
+- val NDCG@10 / Recall@20 of the configured hybrid ranker (``val_ndcg@10``): the number the
+  product actually serves.
 """
 from __future__ import annotations
 
@@ -22,7 +24,7 @@ import scipy.sparse as sp
 
 from src.eval.harness import evaluate, from_hybrid_ranker
 from src.eval.protocol import build_cases
-from src.ranking.hybrid import HybridRanker, RankingConfig
+from src.ranking.hybrid import HybridRanker, RankingConfig, train_cooccurrence
 
 
 @dataclass
@@ -87,11 +89,16 @@ def build_validation(processed_dir: str | Path, adj: sp.csr_matrix, ranking: dic
     profiles = sp.load_npz(processed_dir / "user_profiles.npz").tocsr()
     uids = np.load(processed_dir / "user_profile_ids.npy")
     rcfg = RankingConfig(**{k: v for k, v in ranking.items() if k in RankingConfig.__dataclass_fields__})
+    emb_cfg = RankingConfig(alpha_emb=1.0, beta_chem=0.0, gamma_pref=0.0, delta_cooc=0.0,
+                            emb_similarity="dot", normalize=False)
+    cooc = train_cooccurrence(processed_dir) if rcfg.delta_cooc else None
 
     def ndcg_fn(emb: np.ndarray) -> dict:
-        ranker = HybridRanker(emb, vocab, chem, None, profiles, uids, rcfg)
+        ranker = HybridRanker(emb, vocab, chem, None, profiles, uids, rcfg, cooccurrence=cooc)
         r = evaluate(from_hybrid_ranker(ranker), setup.cases, ks=(10, 20))
-        return {"val_ndcg@10": r["ndcg@10"], "val_recall@20": r["recall@20"]}
+        e = evaluate(from_hybrid_ranker(HybridRanker(emb, vocab, config=emb_cfg)), setup.cases, ks=(10, 20))
+        return {"val_ndcg@10": r["ndcg@10"], "val_recall@20": r["recall@20"],
+                "val_emb_ndcg@10": e["ndcg@10"], "val_emb_recall@20": e["recall@20"]}
 
     def validate(emb: np.ndarray) -> dict:
         out = {"val_bpr": bpr_numpy(emb, val_t), "train_bpr_fixed": bpr_numpy(emb, train_t)}
