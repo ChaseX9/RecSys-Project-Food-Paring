@@ -94,16 +94,19 @@ python scripts/eval_personalization.py --config <copy of configs/personalization
 
 ### Feedback loop
 
-Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingredient`) is applied on the **next** `POST /recommend` of the same user, no retraining needed (`api/db.py: feedback_for_user`, `HybridRanker.recommend(liked=, disliked=)`):
+Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingredient`) **updates the user's taste profile**, and the next `POST /recommend` uses it. No retraining needed (`api/db.py: feedback_for_user`, `HybridRanker.preference(user_id, liked, disliked)`):
 
-| feedback | effect |
+| feedback | effect on the profile |
 |---|---|
-| `dislike` | ingredient never recommended again to this user; ingredients close to it in the NLGCL space (cosine > `feedback_sim_threshold`) are ranked lower |
-| `not_for_me` | same, but only for the same query ("not with this dish") |
-| `like`, `cooked` | ingredient and its close neighbours are ranked higher |
+| `like`, `cooked` | preference of the ingredient set to 1.5 (rating-based values are in [-1, 1]); its close neighbours in the NLGCL space (cosine > `feedback_sim_threshold`) are raised proportionally |
+| `dislike` | preference set to -1 and the ingredient is never recommended again; its neighbours are **not** touched |
+| `not_for_me` | ingredient excluded only for the same query ("not with this dish") |
 | `click` | logged, not applied (implicit, too weak) |
 
-The latest feedback on an ingredient wins (a user can change their mind). `/recommend` returns the feedback it applied (`applied_feedback`) and, per item, why the feedback moved it (`feedback`, also appended to `explanation`). `GET /feedback/{user_id}` shows the current state. Settings: `feedback_*` in `src/ranking/hybrid.py:RankingConfig`.
+- **Latest feedback wins:** the state of an ingredient is the most recent feedback on it, so a user who disliked cilantro and later likes it gets cilantro back.
+- **Cold start:** a new app user (no Food.com history) starts with an empty profile, built from their very first like.
+- The preference stays **multiplicative**: a liked ingredient goes up where it pairs well (coconut milk with chicken), not next to anything.
+- `GET /profile/{user_id}` shows the current profile (ratings history + feedback), `GET /feedback/{user_id}` the raw feedback state. `/recommend` returns `applied_feedback` and, per item, `feedback` ("you liked it", "close to thyme, which you liked").
 
 `/recommend` serves the trained model when `artifacts/ingredient_embeddings.npy` exists (`"mock": false`, check `GET /health`), and falls back to the mock otherwise or with `FOODPAIRING_MOCK=1`.
 

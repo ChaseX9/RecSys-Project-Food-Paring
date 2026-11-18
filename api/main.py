@@ -101,6 +101,17 @@ def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
         return RecommendOut(query=req.ingredients, mock=model is None,
                             applied_feedback=AppliedFeedback(**fb), recommendations=recs)
 
+    @app.get("/profile/{user_id}")
+    def get_profile(user_id: str, n: int = Query(10, ge=1, le=50)):
+        """The user's taste profile as the recommender sees it right now: ratings history
+        (Food.com users) updated with every like / dislike sent to /log_interaction."""
+        fb = db.feedback_for_user(path, user_id)
+        model = state["model"]
+        if model is None:
+            return {"user_id": user_id, "mock": True, "feedback": fb, "likes": [], "dislikes": []}
+        return {"user_id": user_id, "mock": False, "feedback": fb,
+                **model.profile(user_id, fb["liked"], fb["disliked"], n)}
+
     @app.get("/feedback/{user_id}", response_model=AppliedFeedback)
     def get_feedback(user_id: str):
         """What the feedback loop currently applies for this user (outside any query)."""

@@ -41,10 +41,13 @@ class RankingConfig:
     profile_conf_k: float = 10.0     # confidence = n_ratings / (n_ratings + k); 0 = no confidence scaling
     profile_idf: bool = True         # down-weight ubiquitous ingredients in rating profiles
     # feedback loop (explicit like / dislike on ingredients, see api/db.py)
+    # The feedback updates the user's preference vector (see preference()):
+    #   like / cooked -> preference of the ingredient = feedback_like_value, and its close
+    #                    neighbours get feedback_like_value * closeness
+    #   dislike       -> preference -1 and the ingredient is banned; neighbours untouched
     feedback_ban_disliked: bool = True   # a disliked ingredient is never recommended again
     feedback_sim_threshold: float = 0.65 # cosine (NLGCL space) above which two ingredients are "close"
-    feedback_neg: float = 0.5            # penalty on ingredients close to a disliked one
-    feedback_pos: float = 0.3            # boost on liked ingredients and ingredients close to them
+    feedback_like_value: float = 1.5     # preference given to a liked ingredient (profile values are in [-1, 1])
     top_k: int = 20
     # diet / allergy keyword filters, matched as whole words (optional plural s/es).
     # Compound words ("crabmeat", "soybean", ...) must be listed explicitly since
@@ -158,8 +161,36 @@ class HybridRanker:
             if self.cfg.pref_source in ("embedding", "hybrid"):
                 self.user_vecs = rating_profiles.user_vectors(raw)
 
-    def preference(self, user_id) -> np.ndarray:
-        """Preference of ``user_id`` for every ingredient (zeros for an unknown user).
+    def preference(self, user_id, liked: Sequence[str] | None = None,
+                   disliked: Sequence[str] | None = None) -> np.ndarray:
+        """Preference of ``user_id`` for every ingredient, updated with explicit feedback.
+
+        Starts from the profile learned from the user's ratings (zeros for a user without
+        history, e.g. a new app user), then applies the feedback: a liked ingredient and its
+        close neighbours are raised, a disliked ingredient is set to -1 (its neighbours are
+        left untouched). A new user is therefore personalized from their first like.
+        """
+        pref = self._history_preference(user_id).copy()
+        liked_ids = self._resolve_exact(liked)
+        if liked_ids:
+            close, _ = self._closeness(liked_ids)
+            pref = np.maximum(pref, self.cfg.feedback_like_value * close)
+        disliked_ids = self._resolve_exact(disliked)
+        if disliked_ids:
+            pref[disliked_ids] = -1.0
+        return pref.astype(np.float32)
+
+    def profile_summary(self, user_id, liked=None, disliked=None, n: int = 10) -> dict:
+        """Top liked / disliked ingredients of the (feedback-updated) profile, for display."""
+        pref = self.preference(user_id, liked, disliked)
+        pos = [int(i) for i in np.argsort(-pref)[:n] if pref[i] > 0]
+        neg = [int(i) for i in np.argsort(pref)[:n] if pref[i] < 0]
+        return {"likes": [{"name": self.id_to_name[i], "value": round(float(pref[i]), 3)} for i in pos],
+                "dislikes": [{"name": self.id_to_name[i], "value": round(float(pref[i]), 3)} for i in neg],
+                "has_rating_history": bool(self._history_preference(user_id).any())}
+
+    def _history_preference(self, user_id) -> np.ndarray:
+        """Preference learned from the user's past ratings (zeros for an unknown user).
 
         frequency: share of the ingredient in the user's 5/5 recipes (min-max scaled).
         rating:    like - neg_weight * dislike, both min-max scaled (in [-neg_weight, 1]).
@@ -213,8 +244,8 @@ class HybridRanker:
         """Return ranked pairing suggestions with scores and explanation hooks.
 
         ``liked`` / ``disliked``: the user's explicit feedback on ingredients (feedback loop).
-        Disliked ingredients are banned and their close neighbours in the NLGCL space are
-        pushed down; liked ingredients and their neighbours are pushed up.
+        It updates the preference vector (see preference()); disliked ingredients are also
+        banned. Only likes spread to close neighbours.
         """
         top_k = top_k or self.cfg.top_k
         q_ids = self._resolve(query)
@@ -234,8 +265,11 @@ class HybridRanker:
             if len(q_ids) > 1:
                 chem_score /= len(q_ids)
 
-        # preference score (already scaled, see preference())
-        pref_score = self.preference(user_id)
+        # preference score: rating history updated with explicit feedback (see preference())
+        liked_ids = [i for i in self._resolve_exact(liked) if i not in q_ids]
+        disliked_ids = self._resolve_exact(disliked)
+        pref_score = self.preference(user_id, [self.id_to_name[i] for i in liked_ids], disliked)
+        fb_pos, fb_pos_src = self._closeness(liked_ids)
 
         # co-occurrence score = sum of log(1 + count) with the query (train recipes)
         cooc_score = np.zeros(len(self.vocab), dtype=np.float32)
@@ -257,13 +291,6 @@ class HybridRanker:
         else:
             score = pairing + self.cfg.gamma_pref * pref_score
 
-        # feedback loop
-        liked_ids = [i for i in self._resolve_exact(liked) if i not in q_ids]
-        disliked_ids = self._resolve_exact(disliked)
-        fb_pos, fb_pos_src = self._closeness(liked_ids)
-        fb_neg, fb_neg_src = self._closeness(disliked_ids)
-        if liked_ids or disliked_ids:
-            score = score * (1.0 + self.cfg.feedback_pos * fb_pos - self.cfg.feedback_neg * fb_neg)
 
         # hard filters
         ban = set(q_ids)
@@ -296,7 +323,7 @@ class HybridRanker:
                 "chem_score": float(chem_score[idx]),
                 "pref_score": float(pref_score[idx]),
                 "cooc_score": float(cooc_score[idx]),
-                "feedback": self._feedback_reason(idx, fb_pos, fb_pos_src, fb_neg, fb_neg_src),
+                "feedback": self._feedback_reason(idx, fb_pos, fb_pos_src),
                 "query_ids": q_ids,
             })
         return results
@@ -325,13 +352,11 @@ class HybridRanker:
         src[ids] = ids
         return close, src
 
-    def _feedback_reason(self, idx, pos, pos_src, neg, neg_src) -> str | None:
-        if pos[idx] <= 0 and neg[idx] <= 0:
+    def _feedback_reason(self, idx, pos, pos_src, min_closeness: float = 0.25) -> str | None:
+        if pos[idx] < min_closeness:      # tiny effects are not worth an explanation
             return None
-        if pos[idx] >= neg[idx]:
-            other = self.id_to_name[int(pos_src[idx])]
-            return "you liked it" if int(pos_src[idx]) == int(idx) else f"close to {other}, which you liked"
-        return f"close to {self.id_to_name[int(neg_src[idx])]}, which you disliked (ranked lower)"
+        other = self.id_to_name[int(pos_src[idx])]
+        return "you liked it" if int(pos_src[idx]) == int(idx) else f"close to {other}, which you liked"
 
     def _resolve(self, names: Sequence[str]) -> list[int]:
         ids = []
