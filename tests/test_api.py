@@ -82,3 +82,17 @@ def test_mock_recommend_falls_back_without_csv(tmp_path):
     assert len(recs) == 5
     names = {rec["name"] for rec in recs}
     assert names <= set(FALLBACK_VOCAB) and "garlic" not in names
+
+
+def test_recommend_candidates_restricts_output(client):
+    fridge = ["lemon", "dill", "butter", "spinach", "garlic", "salmon"]
+    payload = {"user_id": "u1", "ingredients": ["salmon"], "top_k": 10, "candidates": fridge}
+    recs = client.post("/recommend", json=payload).json()["recommendations"]
+    names = [r["name"] for r in recs]
+    assert names and set(names) <= set(fridge) - {"salmon"}  # never the query itself
+    assert len(names) == len(fridge) - 1
+
+
+def test_recommend_empty_candidates_returns_nothing(client):
+    payload = {"user_id": "u1", "ingredients": ["salmon"], "candidates": []}
+    assert client.post("/recommend", json=payload).json()["recommendations"] == []
