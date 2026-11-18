@@ -21,7 +21,7 @@ def main():
     args = p.parse_args()
 
     processed = ROOT / args.processed_dir
-    print(f"Building graph from {processed} …")
+    print(f"Building graph from {processed} ...")
     graph = build_ingredient_graph(
         processed,
         alpha=args.alpha,

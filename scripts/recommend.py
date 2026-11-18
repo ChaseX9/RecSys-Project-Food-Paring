@@ -72,7 +72,7 @@ def main():
             f"  {r['rank']:2d}. {r['name']:<30s}  "
             f"score={r['score']:.3f}  (emb={r['emb_score']:.3f} chem={r['chem_score']:.3f})"
         )
-        print(f"      → {r['explanation']}")
+        print(f"      -> {r['explanation']}")
     print()
 
 
