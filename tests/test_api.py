@@ -33,3 +33,52 @@ def test_free_text_cooked_log(client):
     payload = {"user_id": "u2", "query_ingredients": ["chicken", "lemon"],
                "feedback": "cooked", "note": "roasted with thyme"}
     assert client.post("/log_interaction", json=payload).status_code == 201
+
+
+REC_KEYS = {"rank", "name", "score", "emb_score", "chem_score", "pref_score", "explanation"}
+
+
+def test_recommend_format_and_top_k(client):
+    payload = {"user_id": "u1", "ingredients": ["Garlic", "lemon"], "top_k": 7}
+    r = client.post("/recommend", json=payload)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["query"] == ["Garlic", "lemon"] and body["mock"] is True
+    recs = body["recommendations"]
+    assert len(recs) == 7
+    assert all(set(rec) == REC_KEYS for rec in recs)
+    assert [rec["rank"] for rec in recs] == list(range(1, 8))
+    scores = [rec["score"] for rec in recs]
+    assert scores == sorted(scores, reverse=True)
+    assert not {rec["name"] for rec in recs} & {"garlic", "lemon"}
+
+
+def test_recommend_default_top_k_and_deterministic(client):
+    payload = {"user_id": "u1", "ingredients": ["salmon"]}
+    first = client.post("/recommend", json=payload).json()
+    assert len(first["recommendations"]) == 10
+    assert client.post("/recommend", json=payload).json() == first
+
+
+def test_recommend_smaller_top_k_is_prefix_of_larger(client):
+    base = {"user_id": "u1", "ingredients": ["tomato", "basil"]}
+    by_k = {k: client.post("/recommend", json={**base, "top_k": k}).json()["recommendations"]
+            for k in (5, 10, 50)}
+    assert by_k[5] == by_k[10][:5]
+    assert by_k[10] == by_k[50][:10]
+
+
+def test_recommend_rejects_empty_ingredients_and_bad_top_k(client):
+    base = {"user_id": "u1", "ingredients": ["salmon"]}
+    assert client.post("/recommend", json={**base, "ingredients": []}).status_code == 422
+    assert client.post("/recommend", json={**base, "top_k": 0}).status_code == 422
+    assert client.post("/recommend", json={**base, "top_k": 51}).status_code == 422
+
+
+def test_mock_recommend_falls_back_without_csv(tmp_path):
+    from api.recommender import FALLBACK_VOCAB, mock_recommend
+
+    recs = mock_recommend(["garlic"], top_k=5, vocab_path=tmp_path / "missing.csv")
+    assert len(recs) == 5
+    names = {rec["name"] for rec in recs}
+    assert names <= set(FALLBACK_VOCAB) and "garlic" not in names
