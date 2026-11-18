@@ -14,10 +14,14 @@ train:
   epochs: 40
   batch_size: 4096
   lr: 0.001
-  lambda_cl: 1.0e-5   # weight of NLGCL contrastive loss
+  lambda_cl: 0.1      # weight of NLGCL contrastive loss (1e-5 had no effect: same scores as LightGCN, see ablations)
   lambda_reg: 1.0e-4  # L2 on embeddings
   seed: 42
   log_every: 5
+  val_every: 1        # validate every N epochs (val split only, never test)
+  select_on: val_ndcg@10   # keep the embeddings of the best epoch on this val metric
+  patience: 10        # stop after N validations without improvement (null = never)
+  val_max_cases: null # null = all val cases
 
 ranking:
   alpha_emb: 0.6
