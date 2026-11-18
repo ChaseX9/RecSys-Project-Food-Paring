@@ -10,7 +10,9 @@ Two protocols, both leakage-free:
 - ``unseen_recipes`` (option a, default): cases come from val/test interactions whose
   recipe has NO train interaction (``is_train_recipe == False``). The graph, NPMI,
   popularity and user profiles are all built on train recipes only, so the model has
-  never seen these recipes. Small but clean (4,426 such recipes, shared by val and test).
+  never seen these recipes. Small but clean (4,426 such recipes). Recipes that appear in
+  both val and test interactions are kept for test only, so tuning on val never sees a
+  test recipe.
 
 - ``recipe_holdout`` (option b): a random fraction of ALL recipes is held out at recipe
   level. Cases are one per held-out recipe, without a user (pure pairing quality). The
@@ -102,6 +104,12 @@ def build_cases(processed_dir: str | Path, split: str = "test", protocol: str = 
         inter = pd.read_parquet(processed_dir / f"interactions_{split}.parquet",
                                 columns=["user_id", "recipe_id"])
         unseen = set(recipes.loc[~is_train, "recipe_id"])
+        if split == "val":
+            # a recipe interacted with in both val and test would let tuning on val see
+            # test recipes: keep it for test only, so val and test recipes are disjoint
+            test_recipes = pd.read_parquet(processed_dir / "interactions_test.parquet",
+                                           columns=["recipe_id"])["recipe_id"]
+            unseen -= set(test_recipes)
         rows = inter[inter["recipe_id"].isin(unseen)]
         mask = is_train
     else:
