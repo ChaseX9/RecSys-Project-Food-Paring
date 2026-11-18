@@ -13,7 +13,7 @@ class InteractionIn(BaseModel):
     user_id: str = Field(min_length=1, max_length=100)
     query_ingredients: list[str] = Field(min_length=1)
     recommended_ingredient: str | None = None
-    feedback: Literal["click", "like", "dislike", "not_for_me", "cooked"]
+    feedback: Literal["click", "like", "dislike", "not_for_me", "cooked", "allergic"]
     note: str | None = Field(default=None, max_length=1000)
 
 
@@ -44,6 +44,7 @@ class Recommendation(BaseModel):
 class AppliedFeedback(BaseModel):
     liked: list[str] = []
     disliked: list[str] = []
+    allergic: list[str] = []      # permanent: never recommended again, nor any ingredient containing it
 
 
 class RecommendOut(BaseModel):
@@ -93,11 +94,12 @@ def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
         model = state["model"]
         if model is None:
             recs = mock_recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
-                                  allergies=req.allergies, diet=req.diet, disliked=fb["disliked"])
+                                  allergies=(req.allergies or []) + fb["allergic"], diet=req.diet,
+                                  disliked=fb["disliked"])
         else:
             recs = model.recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
-                                   allergies=req.allergies, diet=req.diet,
-                                   liked=fb["liked"], disliked=fb["disliked"])
+                                   allergies=(req.allergies or []) + fb["allergic"], diet=req.diet,
+                                   liked=fb["liked"], disliked=fb["disliked"] + fb["allergic"])
         return RecommendOut(query=req.ingredients, mock=model is None,
                             applied_feedback=AppliedFeedback(**fb), recommendations=recs)
 
@@ -110,7 +112,7 @@ def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
         if model is None:
             return {"user_id": user_id, "mock": True, "feedback": fb, "likes": [], "dislikes": []}
         return {"user_id": user_id, "mock": False, "feedback": fb,
-                **model.profile(user_id, fb["liked"], fb["disliked"], n)}
+                **model.profile(user_id, fb["liked"], fb["disliked"] + fb["allergic"], n)}
 
     @app.get("/feedback/{user_id}", response_model=AppliedFeedback)
     def get_feedback(user_id: str):

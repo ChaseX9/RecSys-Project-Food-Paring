@@ -101,9 +101,11 @@ Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingre
 | `like`, `cooked` | preference of the ingredient set to 1.5 (rating-based values are in [-1, 1]); its close neighbours in the NLGCL space (cosine > `feedback_sim_threshold`) are raised proportionally |
 | `dislike` | preference set to -1 and the ingredient is never recommended again; its neighbours are **not** touched |
 | `not_for_me` | ingredient excluded only for the same query ("not with this dish") |
+| `allergic` | **permanent** ban of the ingredient and of every ingredient containing it as a word (`peanut` -> peanut butter, creamy peanut butter, peanut oil...), on every query; a later `like` does **not** lift it |
 | `click` | logged, not applied (implicit, too weak) |
 
-- **Latest feedback wins:** the state of an ingredient is the most recent feedback on it, so a user who disliked cilantro and later likes it gets cilantro back.
+- **Latest feedback wins:** the state of an ingredient is the most recent feedback on it, so a user who disliked cilantro and later likes it gets cilantro back. Allergies are the exception: they stay until removed from the database.
+- **Existing databases:** `data/app.db` files created before `allergic` existed are migrated automatically at startup (rows, ids and timestamps kept).
 - **Cold start:** a new app user (no Food.com history) starts with an empty profile, built from their very first like.
 - The preference stays **multiplicative**: a liked ingredient goes up where it pairs well (coconut milk with chicken), not next to anything.
 - `GET /profile/{user_id}` shows the current profile (ratings history + feedback), `GET /feedback/{user_id}` the raw feedback state. `/recommend` returns `applied_feedback` and, per item, `feedback` ("you liked it", "close to thyme, which you liked").
