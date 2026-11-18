@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS interactions (
     user_id                TEXT    NOT NULL,
     query_ingredients      TEXT    NOT NULL,  -- JSON list of the ingredients the user searched for
     recommended_ingredient TEXT,              -- the pairing the feedback is about (NULL for free-text logs)
-    feedback               TEXT    NOT NULL CHECK (feedback IN ('click', 'like', 'dislike', 'not_for_me', 'cooked', 'allergic')),
+    feedback               TEXT    NOT NULL CHECK (feedback IN ('click', 'like', 'dislike', 'not_for_me', 'cooked', 'allergic', 'not_allergic')),
     note                   TEXT,              -- optional free text (what they actually cooked)
     created_at             TEXT    NOT NULL   -- ISO 8601, UTC
 );
@@ -34,10 +34,10 @@ def init_db(db_path: str | Path = DEFAULT_DB_PATH) -> None:
 
 
 def _migrate_feedback_check(conn: sqlite3.Connection) -> None:
-    """Databases created before 'allergic' existed have a CHECK that rejects it: rebuild the
-    table with the current schema and copy every row (ids and timestamps are kept)."""
+    """Databases created before 'allergic' / 'not_allergic' existed have a CHECK that rejects
+    them: rebuild the table with the current schema and copy every row (ids and timestamps kept)."""
     row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='interactions'").fetchone()
-    if row is None or "'allergic'" in row["sql"]:
+    if row is None or "'not_allergic'" in row["sql"]:
         return
     conn.executescript("""
         ALTER TABLE interactions RENAME TO interactions_old;
@@ -94,6 +94,8 @@ def feedback_for_user(db_path, user_id: str, query_ingredients=None) -> dict[str
     - not_for_me    -> disliked only for the same query ("not with this dish")
     - allergic      -> allergic (everywhere, permanent: a later like does NOT lift it;
                        the ranker also bans every ingredient containing the word)
+    - not_allergic  -> removes the allergy (the only way to lift it, e.g. after a mistake);
+                       the ingredient goes back to its previous like / dislike state
     - click         -> ignored (implicit, too weak)
     Otherwise the most recent feedback on an ingredient wins, so a user can change their mind.
     """
@@ -111,6 +113,8 @@ def feedback_for_user(db_path, user_id: str, query_ingredients=None) -> dict[str
         fb = r["feedback"]
         if fb == "allergic":
             allergic.add(name)
+        elif fb == "not_allergic":
+            allergic.discard(name)
         elif fb in POSITIVE_FEEDBACK or fb == "dislike":
             state[name] = "liked" if fb in POSITIVE_FEEDBACK else "disliked"
         elif fb == "not_for_me" and key is not None and _query_key(json.loads(r["query_ingredients"])) == key:

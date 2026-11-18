@@ -13,7 +13,7 @@ class InteractionIn(BaseModel):
     user_id: str = Field(min_length=1, max_length=100)
     query_ingredients: list[str] = Field(min_length=1)
     recommended_ingredient: str | None = None
-    feedback: Literal["click", "like", "dislike", "not_for_me", "cooked", "allergic"]
+    feedback: Literal["click", "like", "dislike", "not_for_me", "cooked", "allergic", "not_allergic"]
     note: str | None = Field(default=None, max_length=1000)
 
 

@@ -122,10 +122,22 @@ def test_allergy_is_permanent(tmp_path):
     assert fb["allergic"] == ["peanut"] and "peanut" not in fb["liked"]
 
 
+def test_not_allergic_lifts_the_allergy(tmp_path):
+    path = str(tmp_path / "fb.db")
+    db.init_db(path)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "like", None)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "allergic", None)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "not_allergic", None)
+    fb = db.feedback_for_user(path, "u", ["salad"])
+    assert fb["allergic"] == [] and fb["liked"] == ["peanut"]                 # back to its previous state
+    db.insert_interaction(path, "u", ["salad"], "peanut", "allergic", None)  # allergic again
+    assert db.feedback_for_user(path, "u")["allergic"] == ["peanut"]
+
+
 def test_old_database_is_migrated_for_allergic(tmp_path):
     import sqlite3
     path = tmp_path / "old.db"
-    old_schema = db.SCHEMA.replace(", 'allergic'", "")
+    old_schema = db.SCHEMA.replace(", 'allergic', 'not_allergic'", "")
     with sqlite3.connect(path) as conn:
         conn.executescript(old_schema)
         conn.execute("INSERT INTO interactions (user_id, query_ingredients, recommended_ingredient, feedback, "
@@ -221,3 +233,7 @@ def test_model_allergic_bans_ingredient_and_its_variants(tmp_path):
         assert body["applied_feedback"]["allergic"] == ["peanut"]
         prof = c.get("/profile/u1").json()
         assert {"name": "peanut", "value": -1.0} in prof["dislikes"]
+        _log(c, "peanut", "not_allergic")                            # mistake corrected
+        body = c.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"]}).json()
+        assert "peanut" in {r["name"] for r in body["recommendations"]}
+        assert body["applied_feedback"]["allergic"] == []
