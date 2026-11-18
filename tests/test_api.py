@@ -6,7 +6,7 @@ from api.main import create_app
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(create_app(str(tmp_path / "test.db"))) as c:
+    with TestClient(create_app(str(tmp_path / "test.db"), recommender=None)) as c:  # mock contract
         yield c
 
 
@@ -35,7 +35,7 @@ def test_free_text_cooked_log(client):
     assert client.post("/log_interaction", json=payload).status_code == 201
 
 
-REC_KEYS = {"rank", "name", "score", "emb_score", "chem_score", "pref_score", "explanation"}
+REC_KEYS = {"rank", "name", "score", "emb_score", "chem_score", "pref_score", "explanation", "feedback"}
 
 
 def test_recommend_format_and_top_k(client):
@@ -82,3 +82,84 @@ def test_mock_recommend_falls_back_without_csv(tmp_path):
     assert len(recs) == 5
     names = {rec["name"] for rec in recs}
     assert names <= set(FALLBACK_VOCAB) and "garlic" not in names
+
+
+# ------------------------------------------------------------------ feedback loop
+import numpy as np
+import pandas as pd
+
+from api import db
+from api.recommender import ModelRecommender
+from src.ranking import HybridRanker, RankingConfig
+
+
+def _log(client, item, feedback, query=("tomato",), user="u1"):
+    r = client.post("/log_interaction", json={"user_id": user, "query_ingredients": list(query),
+                                              "recommended_ingredient": item, "feedback": feedback})
+    assert r.status_code == 201
+
+
+def test_feedback_state_latest_wins_and_not_for_me_is_query_scoped(tmp_path):
+    path = str(tmp_path / "fb.db")
+    db.init_db(path)
+    db.insert_interaction(path, "u", ["tomato"], "basil", "dislike", None)
+    db.insert_interaction(path, "u", ["tomato"], "basil", "like", None)       # changed their mind
+    db.insert_interaction(path, "u", ["tomato"], "cilantro", "dislike", None)
+    db.insert_interaction(path, "u", ["salmon"], "dill", "not_for_me", None)  # only with salmon
+    db.insert_interaction(path, "u", ["tomato"], "garlic", "click", None)     # ignored
+    assert db.feedback_for_user(path, "u", ["tomato"]) == {"liked": ["basil"], "disliked": ["cilantro"]}
+    assert db.feedback_for_user(path, "u", ["Salmon"])["disliked"] == ["cilantro", "dill"]
+    assert db.feedback_for_user(path, "other", ["tomato"]) == {"liked": [], "disliked": []}
+
+
+def test_mock_dislike_removes_item_on_next_call(client):
+    payload = {"user_id": "u1", "ingredients": ["salmon"]}
+    first = client.post("/recommend", json=payload).json()["recommendations"]
+    target = first[0]["name"]
+    _log(client, target, "dislike", query=("salmon",))
+    body = client.post("/recommend", json=payload).json()
+    assert target not in [r["name"] for r in body["recommendations"]]
+    assert body["applied_feedback"]["disliked"] == [target]
+
+
+VOCAB = ["tomato", "basil", "oregano", "cilantro", "cumin", "garlic"]
+
+
+@pytest.fixture
+def model_client(tmp_path):
+    # basil ~ oregano (close), cilantro ~ cumin (close), garlic far from everything
+    emb = np.array([[1, 0, 0], [0.9, 0.4, 0], [0.88, 0.45, 0], [0.9, 0, 0.4],
+                    [0.88, 0, 0.45], [0.3, 0.3, 0.9]], dtype=float)
+    vocab = pd.DataFrame({"ingredient_id": range(len(VOCAB)), "name": VOCAB})
+    cfg = RankingConfig(beta_chem=0.0, gamma_pref=0.0, normalize=True, feedback_sim_threshold=0.9)
+    rec = ModelRecommender(processed_dir=tmp_path, ranker=HybridRanker(emb, vocab, config=cfg))
+    with TestClient(create_app(str(tmp_path / "m.db"), recommender=rec)) as c:
+        yield c
+
+
+def _names(client, user="u1"):
+    body = client.post("/recommend", json={"user_id": user, "ingredients": ["tomato"], "top_k": 5}).json()
+    assert body["mock"] is False
+    return [r["name"] for r in body["recommendations"]], body
+
+
+def test_model_dislike_bans_item_and_pushes_down_its_neighbours(model_client):
+    before, body0 = _names(model_client)
+    _log(model_client, "cilantro", "dislike")
+    after, body = _names(model_client)
+    assert "cilantro" in before and "cilantro" not in after
+    score = lambda b, n: next(r["score"] for r in b["recommendations"] if r["name"] == n)
+    assert score(body, "cumin") < score(body0, "cumin")          # close to cilantro -> lower
+    assert score(body, "basil") == pytest.approx(score(body0, "basil"))   # unrelated -> unchanged
+    cumin = next(r for r in body["recommendations"] if r["name"] == "cumin")
+    assert "cilantro" in cumin["feedback"] and "disliked" in cumin["explanation"]
+    assert _names(model_client, user="someone_else")[0] == before  # feedback is per user
+
+
+def test_model_like_boosts_item_and_neighbours(model_client):
+    before, _ = _names(model_client)
+    _log(model_client, "oregano", "like")
+    after, body = _names(model_client)
+    assert after.index("oregano") <= before.index("oregano")
+    assert after.index("basil") <= before.index("basil")
+    assert next(r for r in body["recommendations"] if r["name"] == "oregano")["feedback"] == "you liked it"

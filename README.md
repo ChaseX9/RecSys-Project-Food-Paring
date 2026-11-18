@@ -92,6 +92,21 @@ python scripts/eval_personalization.py --config <copy of configs/personalization
 ```
 `configs/eval_short_query.yaml` mimics real usage ("I have salmon"): 70% of the recipe is hidden, so the query is short and the user's taste has more room to matter.
 
+### Feedback loop
+
+Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingredient`) is applied on the **next** `POST /recommend` of the same user, no retraining needed (`api/db.py: feedback_for_user`, `HybridRanker.recommend(liked=, disliked=)`):
+
+| feedback | effect |
+|---|---|
+| `dislike` | ingredient never recommended again to this user; ingredients close to it in the NLGCL space (cosine > `feedback_sim_threshold`) are ranked lower |
+| `not_for_me` | same, but only for the same query ("not with this dish") |
+| `like`, `cooked` | ingredient and its close neighbours are ranked higher |
+| `click` | logged, not applied (implicit, too weak) |
+
+The latest feedback on an ingredient wins (a user can change their mind). `/recommend` returns the feedback it applied (`applied_feedback`) and, per item, why the feedback moved it (`feedback`, also appended to `explanation`). `GET /feedback/{user_id}` shows the current state. Settings: `feedback_*` in `src/ranking/hybrid.py:RankingConfig`.
+
+`/recommend` serves the trained model when `artifacts/ingredient_embeddings.npy` exists (`"mock": false`, check `GET /health`), and falls back to the mock otherwise or with `FOODPAIRING_MOCK=1`.
+
 ## Quick start
 
 1. Virtual Environment

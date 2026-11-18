@@ -38,6 +38,11 @@ class RankingConfig:
     dislike_max_rating: float = 3.0  # only ratings <= this can count as a dislike
     profile_conf_k: float = 10.0     # confidence = n_ratings / (n_ratings + k); 0 = no confidence scaling
     profile_idf: bool = True         # down-weight ubiquitous ingredients in rating profiles
+    # feedback loop (explicit like / dislike on ingredients, see api/db.py)
+    feedback_ban_disliked: bool = True   # a disliked ingredient is never recommended again
+    feedback_sim_threshold: float = 0.65 # cosine (NLGCL space) above which two ingredients are "close"
+    feedback_neg: float = 0.5            # penalty on ingredients close to a disliked one
+    feedback_pos: float = 0.3            # boost on liked ingredients and ingredients close to them
     top_k: int = 20
     # diet / allergy keyword filters, matched as whole words (optional plural s/es).
     # Compound words ("crabmeat", "soybean", ...) must be listed explicitly since
@@ -197,8 +202,15 @@ class HybridRanker:
         diet: str | None = None,
         top_k: int | None = None,
         exclude: Sequence[str] | None = None,
+        liked: Sequence[str] | None = None,
+        disliked: Sequence[str] | None = None,
     ) -> list[dict]:
-        """Return ranked pairing suggestions with scores and explanation hooks."""
+        """Return ranked pairing suggestions with scores and explanation hooks.
+
+        ``liked`` / ``disliked``: the user's explicit feedback on ingredients (feedback loop).
+        Disliked ingredients are banned and their close neighbours in the NLGCL space are
+        pushed down; liked ingredients and their neighbours are pushed up.
+        """
         top_k = top_k or self.cfg.top_k
         q_ids = self._resolve(query)
         if not q_ids:
@@ -240,12 +252,22 @@ class HybridRanker:
         else:
             score = pairing + self.cfg.gamma_pref * pref_score
 
+        # feedback loop
+        liked_ids = [i for i in self._resolve_exact(liked) if i not in q_ids]
+        disliked_ids = self._resolve_exact(disliked)
+        fb_pos, fb_pos_src = self._closeness(liked_ids)
+        fb_neg, fb_neg_src = self._closeness(disliked_ids)
+        if liked_ids or disliked_ids:
+            score = score * (1.0 + self.cfg.feedback_pos * fb_pos - self.cfg.feedback_neg * fb_neg)
+
         # hard filters
         ban = set(q_ids)
         if exclude:
             ban |= set(self._resolve(exclude))
         ban |= self._allergy_ban(allergies)
         ban |= self._diet_ban(diet)
+        if self.cfg.feedback_ban_disliked:
+            ban |= set(disliked_ids)
 
         score[list(ban)] = -np.inf
         # also ban ultra-generic staples that are rarely "pairings"
@@ -269,11 +291,43 @@ class HybridRanker:
                 "chem_score": float(chem_score[idx]),
                 "pref_score": float(pref_score[idx]),
                 "cooc_score": float(cooc_score[idx]),
+                "feedback": self._feedback_reason(idx, fb_pos, fb_pos_src, fb_neg, fb_neg_src),
                 "query_ids": q_ids,
             })
         return results
 
     # ---------------------------------------------------------------- helpers
+    def _resolve_exact(self, names: Sequence[str] | None) -> list[int]:
+        """Exact vocabulary names only: feedback must never hit a fuzzy look-alike."""
+        out = []
+        for n in names or []:
+            i = self.name_to_id.get(str(n).strip().lower())
+            if i is not None:
+                out.append(i)
+        return list(dict.fromkeys(out))
+
+    def _closeness(self, ids: list[int]) -> tuple[np.ndarray, np.ndarray]:
+        """For every ingredient: how close it is to the closest of ``ids`` (0..1), and which one."""
+        n = len(self.vocab)
+        if not ids:
+            return np.zeros(n, dtype=np.float32), np.full(n, -1)
+        sims = self.emb_unit @ self.emb_unit[ids].T          # (N, len(ids))
+        best = sims.argmax(axis=1)
+        thr = self.cfg.feedback_sim_threshold
+        close = np.clip((sims.max(axis=1) - thr) / (1.0 - thr), 0.0, 1.0).astype(np.float32)
+        close[ids] = 1.0
+        src = np.asarray(ids)[best]
+        src[ids] = ids
+        return close, src
+
+    def _feedback_reason(self, idx, pos, pos_src, neg, neg_src) -> str | None:
+        if pos[idx] <= 0 and neg[idx] <= 0:
+            return None
+        if pos[idx] >= neg[idx]:
+            other = self.id_to_name[int(pos_src[idx])]
+            return "you liked it" if int(pos_src[idx]) == int(idx) else f"close to {other}, which you liked"
+        return f"close to {self.id_to_name[int(neg_src[idx])]}, which you disliked (ranked lower)"
+
     def _resolve(self, names: Sequence[str]) -> list[int]:
         ids = []
         for n in names:
