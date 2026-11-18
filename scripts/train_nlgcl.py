@@ -90,7 +90,7 @@ def main():
         log_every=tcfg.get("log_every", 5),
         validate=validate,
         val_every=tcfg.get("val_every", 1),
-        select_on=tcfg.get("select_on", "val_ndcg@10"),
+        select_on=tcfg.get("select_on", "val_emb_ndcg@10"),
         patience=tcfg.get("patience"),
     )
     save_artifacts(embeddings, meta, model, out_dir)
