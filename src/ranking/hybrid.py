@@ -35,7 +35,9 @@ class RankingConfig:
     pref_mode: str = "additive"      # additive: + gamma*pref | multiplicative: pairing * (1 + gamma*pref)
     neg_weight: float = 0.5          # weight of the "dislike" profile (rating source)
     profile_shrink_k: float = 5.0    # pseudo-ratings pulling a user's mean toward the global mean
-    dislike_max_rating: float = 3.0  # only ratings <= this can count as a dislike
+    dislike_below_rating: float = 3.0  # only ratings strictly below this count as dislikes (1/5, 2/5)
+    profile_combine: str = "net"     # net: consistency (P - N) / (P + N + alpha) | separate: like - neg_weight * dislike
+    profile_alpha: float = 2.0       # smoothing of the consistency score (in typical ratings)
     profile_conf_k: float = 10.0     # confidence = n_ratings / (n_ratings + k); 0 = no confidence scaling
     profile_idf: bool = True         # down-weight ubiquitous ingredients in rating profiles
     # feedback loop (explicit like / dislike on ingredients, see api/db.py)
@@ -185,9 +187,12 @@ class HybridRanker:
         rp = self.rating_profiles
         parts = []
         if src in ("rating", "hybrid"):
-            like = _minmax(np.asarray(rp.like.getrow(row).todense()).ravel().astype(np.float32))
-            dis = _minmax(np.asarray(rp.dislike.getrow(row).todense()).ravel().astype(np.float32))
-            parts.append(like - self.cfg.neg_weight * dis)
+            if self.cfg.profile_combine == "net" and rp.net is not None:
+                parts.append(np.asarray(rp.net.getrow(row).todense()).ravel().astype(np.float32))
+            else:
+                like = _minmax(np.asarray(rp.like.getrow(row).todense()).ravel().astype(np.float32))
+                dis = _minmax(np.asarray(rp.dislike.getrow(row).todense()).ravel().astype(np.float32))
+                parts.append(like - self.cfg.neg_weight * dis)
         if src in ("embedding", "hybrid"):
             u = self.user_vecs[row]
             parts.append(_minmax(self.emb_unit @ u) if np.any(u) else zeros)
@@ -444,12 +449,12 @@ def rating_profiles_for(processed_dir: str | Path, config: RankingConfig):
     if config.pref_source == "frequency":
         return None
     return _rating_profiles_cached(str(Path(processed_dir).resolve()), config.profile_shrink_k,
-                                   config.dislike_max_rating, config.profile_conf_k,
-                                   config.profile_idf)
+                                   config.dislike_below_rating, config.profile_conf_k,
+                                   config.profile_idf, config.profile_alpha)
 
 
 @lru_cache(maxsize=8)
-def _rating_profiles_cached(processed_dir: str, shrink_k: float, dislike_max: float, conf_k: float,
-                            use_idf: bool):
+def _rating_profiles_cached(processed_dir: str, shrink_k: float, dislike_below: float, conf_k: float,
+                            use_idf: bool, alpha: float):
     from src.data.rating_profiles import build_rating_profiles
-    return build_rating_profiles(processed_dir, shrink_k, dislike_max, conf_k, use_idf)
+    return build_rating_profiles(processed_dir, shrink_k, dislike_below, conf_k, use_idf, alpha)

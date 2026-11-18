@@ -78,8 +78,8 @@ Trained variants are cached in `artifacts/ablations/<variant>/` (use `--retrain`
 
 User profiles use **every train rating**, not only the 5/5 ones (`src/data/rating_profiles.py`):
 
-- **Centered, shrunk ratings:** `weight = rating - b_u`, where `b_u` is the user's mean rating pulled toward the global mean (4.69). A user who rates everything 5/5 (26% of users) still gets a positive profile; a 2/5 from a generous user becomes a dislike. Only ratings <= 3 can count as dislikes.
-- **Like / dislike profiles:** ingredients of liked recipes go to `like`, ingredients of disliked recipes go to `dislike`; `pref = like - 0.5 * dislike`.
+- **Centered, shrunk ratings:** `weight = rating - b_u`, where `b_u` is the user's mean rating pulled toward the global mean (4.69). A user who rates everything 5/5 (26% of users) still gets a positive profile. Only ratings **strictly below 3** (1/5, 2/5) count as dislikes. Weights are scaled so that one typical rating weighs about 1 for every user.
+- **Consistency per ingredient:** a rating is about a whole recipe, not about each of its ingredients. `pref(i) = (P_i - N_i) / (P_i + N_i + alpha)`, with `P_i` / `N_i` the weight of liked / disliked recipes containing `i`. Flour in 25 liked and 2 disliked cakes stays liked; an ingredient only seen in disliked recipes becomes negative; `alpha = 5` keeps a single recipe from being decisive. (Normalizing likes and dislikes separately let 2 disliked cakes weigh as much as 25 liked ones: a baker ended up "disliking" flour.)
 - **Confidence:** `n / (n + 10)`: a user with 5 ratings is trusted less than one with 50.
 - **Multiplicative gating:** `score = pairing * (1 + gamma * pref)`. The preference only re-orders plausible pairings: a baker's love of flour no longer pushes flour next to salmon.
 - **Level 2 (embedding user vector):** `pref_source: embedding | hybrid` builds the user vector in the NLGCL space (liked recipes minus disliked ones). Implemented and evaluated, not served (no gain on val).
