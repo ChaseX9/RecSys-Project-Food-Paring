@@ -24,7 +24,7 @@ import scipy.sparse as sp
 
 from src.eval.harness import evaluate, from_hybrid_ranker
 from src.eval.protocol import build_cases
-from src.ranking.hybrid import HybridRanker, RankingConfig, train_cooccurrence
+from src.ranking.hybrid import HybridRanker, RankingConfig, rating_profiles_for, train_cooccurrence
 
 
 @dataclass
@@ -92,9 +92,11 @@ def build_validation(processed_dir: str | Path, adj: sp.csr_matrix, ranking: dic
     emb_cfg = RankingConfig(alpha_emb=1.0, beta_chem=0.0, gamma_pref=0.0, delta_cooc=0.0,
                             emb_similarity="dot", normalize=False)
     cooc = train_cooccurrence(processed_dir) if rcfg.delta_cooc else None
+    rprof = rating_profiles_for(processed_dir, rcfg)
 
     def ndcg_fn(emb: np.ndarray) -> dict:
-        ranker = HybridRanker(emb, vocab, chem, None, profiles, uids, rcfg, cooccurrence=cooc)
+        ranker = HybridRanker(emb, vocab, chem, None, profiles, uids, rcfg, cooccurrence=cooc,
+                              rating_profiles=rprof)
         r = evaluate(from_hybrid_ranker(ranker), setup.cases, ks=(10, 20))
         e = evaluate(from_hybrid_ranker(HybridRanker(emb, vocab, config=emb_cfg)), setup.cases, ks=(10, 20))
         return {"val_ndcg@10": r["ndcg@10"], "val_recall@20": r["recall@20"],

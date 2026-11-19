@@ -6,7 +6,7 @@ from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
 from . import db
-from .recommender import mock_recommend
+from .recommender import ModelRecommender, mock_recommend, model_available
 
 
 class InteractionIn(BaseModel):
@@ -38,27 +38,43 @@ class Recommendation(BaseModel):
     chem_score: float
     pref_score: float
     explanation: str
+    feedback: str | None = None      # effect of the user's past like / dislike, if any
+
+
+class AppliedFeedback(BaseModel):
+    liked: list[str] = []
+    disliked: list[str] = []
 
 
 class RecommendOut(BaseModel):
     query: list[str]
     mock: bool = True
+    applied_feedback: AppliedFeedback = AppliedFeedback()
     recommendations: list[Recommendation]
 
 
-def create_app(db_path: str | None = None) -> FastAPI:
+def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
+    """``recommender``: "auto" = trained model if artifacts/ingredient_embeddings.npy exists
+    (and FOODPAIRING_MOCK is not set), else the mock; None = mock; or any object with a
+    ``recommend(...)`` method (tests)."""
     path = db_path or os.environ.get("FOODPAIRING_DB", str(db.DEFAULT_DB_PATH))
+    state = {"model": None}
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         db.init_db(path)
+        if recommender == "auto":
+            if model_available() and os.environ.get("FOODPAIRING_MOCK") != "1":
+                state["model"] = ModelRecommender()
+        elif recommender is not None:
+            state["model"] = recommender
         yield
 
     app = FastAPI(title="Food Pairing API", lifespan=lifespan)
 
     @app.get("/health")
     def health():
-        return {"status": "ok"}
+        return {"status": "ok", "model": "nlgcl" if state["model"] is not None else "mock"}
 
     @app.post("/log_interaction", response_model=InteractionOut, status_code=201)
     def log_interaction(item: InteractionIn):
@@ -72,9 +88,23 @@ def create_app(db_path: str | None = None) -> FastAPI:
 
     @app.post("/recommend", response_model=RecommendOut)
     def recommend(req: RecommendIn):
-        recs = mock_recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
-                              allergies=req.allergies, diet=req.diet)
-        return RecommendOut(query=req.ingredients, mock=True, recommendations=recs)
+        # feedback loop: every like / dislike logged by this user is applied immediately
+        fb = db.feedback_for_user(path, req.user_id, req.ingredients)
+        model = state["model"]
+        if model is None:
+            recs = mock_recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
+                                  allergies=req.allergies, diet=req.diet, disliked=fb["disliked"])
+        else:
+            recs = model.recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
+                                   allergies=req.allergies, diet=req.diet,
+                                   liked=fb["liked"], disliked=fb["disliked"])
+        return RecommendOut(query=req.ingredients, mock=model is None,
+                            applied_feedback=AppliedFeedback(**fb), recommendations=recs)
+
+    @app.get("/feedback/{user_id}", response_model=AppliedFeedback)
+    def get_feedback(user_id: str):
+        """What the feedback loop currently applies for this user (outside any query)."""
+        return AppliedFeedback(**db.feedback_for_user(path, user_id))
 
     return app
 

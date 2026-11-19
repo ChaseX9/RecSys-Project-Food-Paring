@@ -58,3 +58,39 @@ def list_interactions(db_path, user_id: str | None = None, limit: int = 100) -> 
         d["query_ingredients"] = json.loads(d["query_ingredients"])
         out.append(d)
     return out
+
+
+POSITIVE_FEEDBACK = {"like", "cooked"}
+NEGATIVE_FEEDBACK = {"dislike", "not_for_me"}
+
+
+def _query_key(ingredients) -> tuple[str, ...]:
+    return tuple(sorted({str(i).strip().lower() for i in ingredients}))
+
+
+def feedback_for_user(db_path, user_id: str, query_ingredients=None) -> dict[str, list[str]]:
+    """Explicit feedback of ``user_id`` on ingredients, for the feedback loop.
+
+    - like / cooked -> liked (everywhere)
+    - dislike       -> disliked (everywhere: the user does not want this ingredient)
+    - not_for_me    -> disliked only for the same query ("not with this dish")
+    - click         -> ignored (implicit, too weak)
+    The most recent feedback on an ingredient wins, so a user can change their mind.
+    """
+    with connect(db_path) as conn:
+        rows = conn.execute(
+            "SELECT query_ingredients, recommended_ingredient, feedback FROM interactions "
+            "WHERE user_id = ? AND recommended_ingredient IS NOT NULL ORDER BY id ASC",
+            (user_id,),
+        ).fetchall()
+    key = _query_key(query_ingredients) if query_ingredients else None
+    state: dict[str, str] = {}
+    for r in rows:
+        name = r["recommended_ingredient"].strip().lower()
+        fb = r["feedback"]
+        if fb in POSITIVE_FEEDBACK or fb == "dislike":
+            state[name] = "liked" if fb in POSITIVE_FEEDBACK else "disliked"
+        elif fb == "not_for_me" and key is not None and _query_key(json.loads(r["query_ingredients"])) == key:
+            state[name] = "disliked"
+    return {"liked": sorted(n for n, s in state.items() if s == "liked"),
+            "disliked": sorted(n for n, s in state.items() if s == "disliked")}

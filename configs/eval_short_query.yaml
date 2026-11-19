@@ -1,0 +1,13 @@
+# "I have X" usage: 70% of the recipe hidden, so the query is short and ambiguous
+# and the user taste has more room to matter. Same leakage rules as configs/eval.yaml.
+processed_dir: data/processed
+out_dir: artifacts/eval/short_query
+protocol: unseen_recipes
+split: test
+hidden_ratio: 0.7
+min_query: 2
+holdout_frac: 0.05
+max_cases: null
+seed: 42
+ks: [10, 20]
+baselines: [random, popularity, cooccurrence]
