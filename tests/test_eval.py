@@ -106,7 +106,7 @@ def _write_processed(d):
     })
     recipes.to_parquet(d / "recipes.parquet", index=False)
     pd.DataFrame({"user_id": [1, 2, 3], "recipe_id": [3, 0, 4]}).to_parquet(d / "interactions_test.parquet")
-    pd.DataFrame({"user_id": [1, 2], "recipe_id": [1, 2]}).to_parquet(d / "interactions_val.parquet")
+    pd.DataFrame({"user_id": [1, 2, 4], "recipe_id": [1, 2, 3]}).to_parquet(d / "interactions_val.parquet")
     indptr = np.cumsum([0] + [len(x) for x in recipes.ingredient_ids])
     ri = sp.csr_matrix((np.ones(indptr[-1], dtype=np.float32),
                         np.concatenate(recipes.ingredient_ids.tolist()), indptr), shape=(5, 6))
@@ -122,6 +122,15 @@ def test_unseen_recipes_protocol_has_no_train_recipe(tmp_path):
     # deterministic
     s2 = build_cases(tmp_path, split="test", protocol="unseen_recipes", min_query=2)
     assert s.cases.equals(s2.cases)
+
+
+def test_val_and_test_recipes_are_disjoint(tmp_path):
+    # recipe 3 is unseen in train but interacted with in val AND test -> test only
+    _write_processed(tmp_path)
+    val = build_cases(tmp_path, split="val", protocol="unseen_recipes", min_query=2)
+    test = build_cases(tmp_path, split="test", protocol="unseen_recipes", min_query=2)
+    assert 3 in set(test.cases.recipe_id)
+    assert set(val.cases.recipe_id).isdisjoint(test.cases.recipe_id)
 
 
 def test_baselines_never_see_eval_recipes(tmp_path):

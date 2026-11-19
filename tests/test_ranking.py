@@ -93,3 +93,42 @@ def test_vegan_with_nut_allergy_still_bans_peanut_butter(ranker):
 
 def test_no_filters_keeps_everything_but_query(ranker):
     assert _names(ranker) == set(VOCAB) - {"tomato"}
+
+
+# --------------------------------------------------------------- scoring options
+import scipy.sparse as sp
+
+from src.ranking import RankingConfig
+
+
+def _tiny(config, cooc=None):
+    vocab = pd.DataFrame({"ingredient_id": range(4), "name": ["tomato", "basil", "rare herb", "garlic"]})
+    # basil: same direction as tomato, large norm (popular); rare herb: same direction, small norm
+    emb = np.array([[1.0, 0.0], [3.0, 0.2], [0.3, 0.0], [0.0, 1.0]])
+    return HybridRanker(emb, vocab, config=config, cooccurrence=cooc)
+
+
+def test_cosine_ignores_norm_and_dot_keeps_it():
+    only_emb = dict(beta_chem=0.0, gamma_pref=0.0)
+    cos = _tiny(RankingConfig(emb_similarity="cosine", **only_emb)).recommend(["tomato"], top_k=3)
+    dot = _tiny(RankingConfig(emb_similarity="dot", **only_emb)).recommend(["tomato"], top_k=3)
+    assert cos[0]["name"] == "rare herb"        # cosine 1.0 beats basil's 0.998
+    assert dot[0]["name"] == "basil"            # dot keeps the popularity carried by the norm
+
+
+def test_normalize_puts_components_in_unit_range():
+    recs = _tiny(RankingConfig(emb_similarity="dot", normalize=True, beta_chem=0.0,
+                               gamma_pref=0.0)).recommend(["tomato"], top_k=3)
+    assert all(0.0 <= r["emb_score"] <= 1.0 for r in recs)
+    assert recs[0]["emb_score"] == pytest.approx(1.0)
+
+
+def test_cooccurrence_term_reranks():
+    cooc = sp.csr_matrix(np.array([[0, 0, 0, 50], [0, 0, 0, 0], [0, 0, 0, 0], [50, 0, 0, 0]], dtype=float))
+    cfg = RankingConfig(alpha_emb=0.0, beta_chem=0.0, gamma_pref=0.0, delta_cooc=1.0, normalize=True)
+    assert _tiny(cfg, cooc).recommend(["tomato"], top_k=1)[0]["name"] == "garlic"
+
+
+def test_unknown_similarity_rejected():
+    with pytest.raises(ValueError):
+        _tiny(RankingConfig(emb_similarity="euclid"))
