@@ -18,7 +18,7 @@ A recommender system that answers the everyday question *"I have X, what goes we
 
 - **Data:** Food.com recipes and user interactions (Kaggle). Optional chemical flavor relationships from FlavorDB / FlavorGraph.
 - **Model:** graph-based recommender inspired by NLGCL (Xu et al., RecSys '25): a LightGCN-style encoder trained with a BPR loss plus a contrastive loss that uses the naturally existing neighbor layers of the GNN as contrastive views, instead of noisy graph augmentations.
-- **Hybrid ranking:** embedding similarity + chemical score + hard constraint filtering. TODO: confirm final components.
+- **Hybrid ranking:** embedding similarity + co-occurrence in train recipes + chemical score, each min-max normalized per query, then hard constraint filtering (allergies, diet). Weights in `configs/model.yaml`, chosen on the val split.
 - **Personalization:** user preference vector built from highly rated recipes.
 - **Explanations:** short reasons for each recommendation (e.g. frequently paired together, shared aromatic compounds).
 
@@ -29,7 +29,7 @@ The evaluation harness (`src/eval/`) scores any recommender on held-out recipes 
 
 **Protocol: masked-ingredient completion.** For each held-out user → recipe interaction, about 20% of the recipe's ingredients are hidden (at least one). The remaining ingredients are the query, the hidden ones are the ground truth, and the user id is passed for personalization. Query ingredients are removed from every prediction before scoring.
 
-**No leakage.** By default (`protocol: unseen_recipes`) only recipes with **no train interaction** are evaluated, so the graph, NPMI, popularity and user profiles (all built on train recipes) have never seen them. A stricter recipe-level holdout (`protocol: recipe_holdout`) is also available; it requires the graph and model to be rebuilt without the held-out recipes (`src.eval.protocol.holdout_recipe_ids`, same `holdout_frac` and `seed`).
+**No leakage.** By default (`protocol: unseen_recipes`) only recipes with **no train interaction** are evaluated (a recipe seen in both val and test interactions is kept for test only, so tuning on val never touches a test recipe), so the graph, NPMI, popularity and user profiles (all built on train recipes) have never seen them. A stricter recipe-level holdout (`protocol: recipe_holdout`) is also available; it requires the graph and model to be rebuilt without the held-out recipes (`src.eval.protocol.holdout_recipe_ids`, same `holdout_frac` and `seed`).
 
 Settings (protocol, split, share of hidden ingredients, k, seed, baselines) are in `configs/eval.yaml`.
 
@@ -63,12 +63,12 @@ Tests: `pytest tests/test_eval.py` (hand-computed metric values, mock prediction
 
 `scripts/ablations.py` trains each model variant listed in `configs/ablations.yaml` and scores it, with each ranking variant, on the same cases as the baselines:
 
-- **Model:** NLGCL (reference) vs LightGCN (`lambda_cl = 0`, i.e. the innovation switched off), a stronger contrastive weight, and a graph built without chemical edges.
-- **Ranking:** full hybrid score vs no chemical score, no user preference, embedding only.
+- **Model:** NLGCL (reference, `lambda_cl = 0.1`) vs LightGCN (`lambda_cl = 0`, i.e. the innovation switched off), the former `lambda_cl = 1e-5`, and a graph built without chemical edges. Every variant uses the same validation and early stopping.
+- **Ranking:** served hybrid score vs without the embedding (is the GNN useful next to co-occurrence?), without co-occurrence, without chemistry, with the user profile, a model-led score (no co-occurrence) and the embedding alone.
 - **Beyond accuracy (top-10):** catalog coverage, long-tail share, novelty, and `grounded@10`, the share of recommendations backed by a real explanation signal (strong NPMI with a query ingredient or shared aromatic compounds).
 
 ```bash
-python scripts/ablations.py                    # val + test, about 15 min on CPU
+python scripts/ablations.py                    # val + test, about 35 min on CPU
 python scripts/ablations.py --max-cases 300    # quick run
 ```
 
@@ -97,11 +97,17 @@ pip install -r requirements.txt
 python scripts/build_graph.py
 ```
 
-4. Train NLGCL embeddings (~40 epochs, CPU is fine for 2.6k nodes)
+4. Train NLGCL embeddings (CPU is fine for 2.6k nodes, about 8 min)
 ```bash
-python scripts/train_nlgcl.py --epochs 40 --device cpu
-# or GPU:
-python scripts/train_nlgcl.py --epochs 40 --device cuda
+python scripts/train_nlgcl.py                 # settings from configs/model.yaml
+python scripts/train_nlgcl.py --device cuda   # GPU
+python scripts/train_nlgcl.py --no-val        # skip per-epoch validation (faster, no early stopping)
+```
+Every epoch the model is validated on the **val split only**: BPR loss on ingredient pairs of val recipes the graph never saw, and NDCG@10 of the embedding alone and of the hybrid ranker. The embeddings of the best epoch on `val_emb_ndcg@10` are kept, and training stops after `patience` epochs without improvement. Outputs: `artifacts/ingredient_embeddings.npy`, `artifacts/nlgcl_state.pt`, `artifacts/train_meta.json` (full history).
+
+Plot the training / validation curves:
+```bash
+python scripts/plot_training.py               # -> artifacts/training_curves.png
 ```
 
 5. Recommend

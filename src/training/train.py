@@ -59,7 +59,7 @@ def train_nlgcl(
     log_every: int = 5,
     validate: Optional[Callable[[np.ndarray], dict]] = None,
     val_every: int = 1,
-    select_on: str = "val_ndcg@10",
+    select_on: str = "val_emb_ndcg@10",
     patience: Optional[int] = None,
 ) -> tuple[NLGCL, np.ndarray, dict]:
     """Train NLGCL. With ``validate``, val metrics are logged every ``val_every`` epochs and
@@ -147,7 +147,8 @@ def train_nlgcl(
             elapsed = time.time() - t0
             val = ""
             if "val_bpr" in avg:
-                val = (f"  val_bpr={avg['val_bpr']:.4f}  val_ndcg@10={avg['val_ndcg@10']:.4f}")
+                val = (f"  val_bpr={avg['val_bpr']:.4f}  val_emb_ndcg@10={avg['val_emb_ndcg@10']:.4f}"
+                       f"  val_ndcg@10={avg['val_ndcg@10']:.4f}")
             print(
                 f"epoch {epoch:03d}  loss={avg['loss']:.4f}  "
                 f"bpr={avg['bpr']:.4f}  cl={avg['cl']:.4f}{val}  ({elapsed:.1f}s)"

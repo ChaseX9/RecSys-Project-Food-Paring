@@ -35,8 +35,9 @@ from src.eval.protocol import build_cases
 from src.graph.build_graph import build_ingredient_graph
 from src.ranking.hybrid import RankingConfig, load_ranker
 from src.training.train import save_artifacts, train_nlgcl
+from src.training.validation import build_validation
 
-TRAIN_KEYS = {"lambda_cl", "n_groups", "temperature", "graph_alpha", "epochs"}
+TRAIN_KEYS = {"lambda_cl", "n_groups", "temperature", "graph_alpha", "epochs", "lr"}
 
 
 def load_yaml(path: Path) -> dict:
@@ -44,8 +45,8 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
-def train_variant(name: str, overrides: dict, mcfg: dict, processed: Path, out_dir: Path,
-                  retrain: bool, device: str) -> Path:
+def train_variant(name: str, overrides: dict, mcfg: dict, ecfg: dict, processed: Path,
+                  out_dir: Path, retrain: bool, device: str) -> Path:
     unknown = set(overrides) - TRAIN_KEYS
     if unknown:
         raise ValueError(f"train variant {name!r}: unknown keys {sorted(unknown)}")
@@ -63,6 +64,9 @@ def train_variant(name: str, overrides: dict, mcfg: dict, processed: Path, out_d
         graph = build_ingredient_graph(processed, alpha=alpha, top_k=g.get("top_k", 50),
                                        min_cooccur=g.get("min_cooccur", 2))
     lambda_cl = overrides.get("lambda_cl", t.get("lambda_cl", 1e-5))
+    # same validation / early stopping for every variant (val split only)
+    validate = build_validation(processed, graph["adj"], mcfg.get("ranking", {}), ecfg,
+                                max_cases=t.get("val_max_cases"))["validate"]
     print(f"[{name}] training  alpha={alpha}  lambda_cl={lambda_cl}  "
           f"edges={graph['adj'].nnz // 2:,}")
     model, emb, meta = train_nlgcl(
@@ -70,10 +74,12 @@ def train_variant(name: str, overrides: dict, mcfg: dict, processed: Path, out_d
         emb_dim=m.get("emb_dim", 64), n_layers=m.get("n_layers", 3),
         n_groups=overrides.get("n_groups", m.get("n_groups", 2)),
         temperature=overrides.get("temperature", m.get("temperature", 0.2)),
-        lambda_cl=lambda_cl, lambda_reg=t.get("lambda_reg", 1e-4), lr=t.get("lr", 1e-3),
+        lambda_cl=lambda_cl, lambda_reg=t.get("lambda_reg", 1e-4), lr=overrides.get("lr", t.get("lr", 1e-3)),
         epochs=overrides.get("epochs", t.get("epochs", 40)),
         batch_size=t.get("batch_size", 4096), device=device, seed=t.get("seed", 42),
         log_every=t.get("log_every", 5),
+        validate=validate, val_every=t.get("val_every", 1),
+        select_on=t.get("select_on", "val_emb_ndcg@10"), patience=t.get("patience"),
     )
     meta["variant"] = {"name": name, "overrides": overrides, "graph_alpha": alpha,
                        "lambda_cl": lambda_cl}
@@ -112,7 +118,7 @@ def main():
     max_cases = args.max_cases or ecfg.get("max_cases")
 
     # 1. train-time variants (cached)
-    emb_paths = {name: train_variant(name, ov or {}, mcfg, processed, ROOT / acfg["out_dir"],
+    emb_paths = {name: train_variant(name, ov or {}, mcfg, ecfg, processed, ROOT / acfg["out_dir"],
                                      args.retrain, args.device)
                  for name, ov in acfg["train_variants"].items()}
 
