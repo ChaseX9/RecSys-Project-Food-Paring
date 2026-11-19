@@ -1,6 +1,7 @@
 """Mock recommender used by POST /recommend until the real HybridRanker is wired in (week 3).
 
 TODO(week 3): replace `mock_recommend` with HybridRanker.recommend() (src/ranking/hybrid.py)
+(`candidates`, when given, is a whitelist: ban every ingredient not in it, e.g. score = -inf)
 followed by attach_explanations() (src/explain/reasons.py), both on branch model-train,
 which provides the `explanation` field.
 
@@ -43,12 +44,14 @@ def load_vocab(path: str | Path = VOCAB_PATH) -> tuple[str, ...]:
     return names or FALLBACK_VOCAB
 
 
-def _seed(ingredients: list[str], allergies: list[str] | None, diet: str | None) -> int:
+def _seed(ingredients: list[str], allergies: list[str] | None, diet: str | None,
+          candidates: list[str] | None = None) -> int:
     # top_k is deliberately not part of the seed (see POOL_SIZE).
     key = "|".join([
         ",".join(sorted({i.strip().lower() for i in ingredients})),
         ",".join(sorted({a.strip().lower() for a in allergies or []})),
         (diet or "").strip().lower(),
+        ",".join(sorted({c.strip().lower() for c in candidates or []})),
     ])
     return int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], "big")
 
@@ -61,6 +64,7 @@ def mock_recommend(
     diet: str | None = None,
     vocab_path: str | Path = VOCAB_PATH,
     disliked: list[str] | None = None,
+    candidates: list[str] | None = None,
 ) -> list[dict]:
     """Deterministic fake recommendations: same query -> same output.
 
@@ -73,13 +77,15 @@ def mock_recommend(
     banned = {d.strip().lower() for d in disliked or []}  # feedback loop: never show a disliked item
     allergy_keys = [a.strip().lower() for a in allergies or [] if a.strip()]
 
-    candidates = [
+    allowed = None if candidates is None else {c.strip().lower() for c in candidates}
+    pool_names = [
         n for n in dict.fromkeys(load_vocab(vocab_path))
         if n not in query and n not in STAPLES and n not in banned
         and not any(k in n for k in allergy_keys)
+        and (allowed is None or n in allowed)
     ]
-    rng = random.Random(_seed(ingredients, allergies, diet))
-    pool = rng.sample(candidates, min(POOL_SIZE, len(candidates)))
+    rng = random.Random(_seed(ingredients, allergies, diet, candidates))
+    pool = rng.sample(pool_names, min(POOL_SIZE, len(pool_names)))
 
     pref = 0.0  # no user profiles in the mock -> unknown user
     items = []
@@ -128,11 +134,12 @@ class ModelRecommender:
             self.ing_comp = sp.load_npz(ic).tocsr()
 
     def recommend(self, ingredients, top_k=10, user_id=None, allergies=None, diet=None,
-                  liked=None, disliked=None) -> list[dict]:
+                  liked=None, disliked=None, candidates=None) -> list[dict]:
         from src.explain.reasons import attach_explanations
 
         recs = self.ranker.recommend(ingredients, user_id=user_id, allergies=allergies, diet=diet,
-                                     top_k=top_k, liked=liked, disliked=disliked)
+                                     top_k=top_k, liked=liked, disliked=disliked,
+                                     candidates=candidates)
         recs = attach_explanations(recs, ingredients, self.npmi, self.chemical,
                                    self.compounds, self.ing_comp)
         out = []

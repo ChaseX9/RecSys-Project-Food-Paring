@@ -28,6 +28,9 @@ class RecommendIn(BaseModel):
     top_k: int = Field(default=10, ge=1, le=50)
     allergies: list[str] | None = None
     diet: str | None = None
+    # Optional whitelist: only these ingredients may be recommended (e.g. what is in the
+    # user's fridge). None = the whole vocabulary.
+    candidates: list[str] | None = Field(default=None, max_length=500)
 
 
 class Recommendation(BaseModel):
@@ -95,11 +98,12 @@ def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
         if model is None:
             recs = mock_recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
                                   allergies=(req.allergies or []) + fb["allergic"], diet=req.diet,
-                                  disliked=fb["disliked"])
+                                  disliked=fb["disliked"], candidates=req.candidates)
         else:
             recs = model.recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
                                    allergies=(req.allergies or []) + fb["allergic"], diet=req.diet,
-                                   liked=fb["liked"], disliked=fb["disliked"] + fb["allergic"])
+                                   liked=fb["liked"], disliked=fb["disliked"] + fb["allergic"],
+                                   candidates=req.candidates)
         return RecommendOut(query=req.ingredients, mock=model is None,
                             applied_feedback=AppliedFeedback(**fb), recommendations=recs)
 

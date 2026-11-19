@@ -84,6 +84,20 @@ def test_mock_recommend_falls_back_without_csv(tmp_path):
     assert names <= set(FALLBACK_VOCAB) and "garlic" not in names
 
 
+def test_recommend_candidates_restricts_output(client):
+    fridge = ["lemon", "dill", "butter", "spinach", "garlic", "salmon"]
+    payload = {"user_id": "u1", "ingredients": ["salmon"], "top_k": 10, "candidates": fridge}
+    recs = client.post("/recommend", json=payload).json()["recommendations"]
+    names = [r["name"] for r in recs]
+    assert names and set(names) <= set(fridge) - {"salmon"}  # never the query itself
+    assert len(names) == len(fridge) - 1
+
+
+def test_recommend_empty_candidates_returns_nothing(client):
+    payload = {"user_id": "u1", "ingredients": ["salmon"], "candidates": []}
+    assert client.post("/recommend", json=payload).json()["recommendations"] == []
+
+
 # ------------------------------------------------------------------ feedback loop
 import numpy as np
 import pandas as pd
@@ -237,3 +251,14 @@ def test_model_allergic_bans_ingredient_and_its_variants(tmp_path):
         body = c.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"]}).json()
         assert "peanut" in {r["name"] for r in body["recommendations"]}
         assert body["applied_feedback"]["allergic"] == []
+
+
+def test_model_candidates_restricts_output(model_client):
+    fridge = ["basil", "cumin", "garlic", "tomato"]
+    body = model_client.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"],
+                                                 "top_k": 10, "candidates": fridge}).json()
+    assert body["mock"] is False
+    assert {r["name"] for r in body["recommendations"]} == {"basil", "cumin", "garlic"}
+    empty = model_client.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"],
+                                                  "candidates": []}).json()
+    assert empty["recommendations"] == []

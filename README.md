@@ -156,4 +156,26 @@ python scripts/recommend.py chicken --allergies gluten dairy --diet vegetarian
 python scripts/recommend.py tomato basil --user-id 12345
 ```
 
+6. Web interface (two terminals, from the repo root)
+```bash
+uvicorn api.main:app                 # API on http://localhost:8000
+streamlit run app/streamlit_app.py   # UI on http://localhost:8501
+```
+The UI (in French, dark/light toggle) only talks to the API (`FOODPAIRING_API_URL`, default
+`http://127.0.0.1:8000`). Pages: **Trouver des accords** (query + recommendations + feedback, with
+the user's diet/allergies applied), **Mon frigo** (pairings using only what the user has
+at home, via the `candidates` field of `/recommend`), **Mon historique**, **Mon profil**
+(diet, allergies, disliked ingredients, Food.com profile link, e-mail, password),
+**Administration** (admins only: overview, user management, logs, API checks), **À propos**.
+
+Accounts are **mock** for now (kept in memory in `app/auth.py`, reset when Streamlit restarts)
+until the user database exists. Demo logins: `admin` / `admin1234` (admin), `demo` / `demo1234`,
+`camille` / `camille1234`, or "Continuer sans compte". When the API falls back to the mock
+`/recommend` (no trained embeddings), a "Résultats d'exemple" badge is shown.
+
+Ingredient photos come from [TheMealDB](https://www.themealdb.com) (free for educational use).
+`python scripts/fetch_ingredient_images.py` matches the vocab to their ingredient list (exact,
+then without qualifiers like "fresh"/"ground", then the head noun) and stores 96 px thumbnails in
+`app/images/ingredients/` with the mapping in `app/ingredient_images.csv` (~93 % of ingredient
+uses covered). Ingredients without a photo show a family emoji instead.
 

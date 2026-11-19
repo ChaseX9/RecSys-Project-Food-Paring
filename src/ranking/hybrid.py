@@ -240,12 +240,16 @@ class HybridRanker:
         exclude: Sequence[str] | None = None,
         liked: Sequence[str] | None = None,
         disliked: Sequence[str] | None = None,
+        candidates: Sequence[str] | None = None,
     ) -> list[dict]:
         """Return ranked pairing suggestions with scores and explanation hooks.
 
         ``liked`` / ``disliked``: the user's explicit feedback on ingredients (feedback loop).
         It updates the preference vector (see preference()); disliked ingredients are also
         banned. Only likes spread to close neighbours.
+
+        ``candidates``: if given, only these ingredients (exact names) can be returned,
+        e.g. what the user has in the fridge. An empty list returns nothing.
         """
         top_k = top_k or self.cfg.top_k
         q_ids = self._resolve(query)
@@ -300,6 +304,9 @@ class HybridRanker:
         ban |= self._diet_ban(diet)
         if self.cfg.feedback_ban_disliked:
             ban |= set(disliked_ids)
+        if candidates is not None:
+            allowed = set(self._resolve_exact(candidates))
+            ban |= set(range(len(self.vocab))) - allowed
 
         score[list(ban)] = -np.inf
         # also ban ultra-generic staples that are rarely "pairings"

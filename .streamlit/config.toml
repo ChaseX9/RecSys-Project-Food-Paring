@@ -1,0 +1,13 @@
+[theme]
+# Default = dark. The in-app "Mode sombre" toggle switches these at runtime (app/common.py THEMES).
+base = "dark"
+primaryColor = "#9CC54A"
+backgroundColor = "#111613"
+secondaryBackgroundColor = "#1C241F"
+textColor = "#E6EBE4"
+
+[server]
+headless = true
+
+[client]
+toolbarMode = "minimal"
