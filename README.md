@@ -110,6 +110,8 @@ Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingre
 - **Cold start:** a new app user (no Food.com history) starts with an empty profile, built from their very first like.
 - The preference stays **multiplicative**: a liked ingredient goes up where it pairs well (coconut milk with chicken), not next to anything.
 - `GET /profile/{user_id}` shows the current profile (ratings history + feedback), `GET /feedback/{user_id}` the raw feedback state. `/recommend` returns `applied_feedback` and, per item, `feedback` ("you liked it", "close to thyme, which you liked").
+- **Recipe ratings from the app:** app users rate Food.com recipes 1-5 (`PUT /recipe_ratings/{user_id}/{recipe_id}`, stored in `recipe_ratings`). On every `/recommend` and `/profile`, their ratings (plus the train ratings of a linked Food.com user) are turned into the same rating profile as offline (`RatingData.profile_for`, same formula and train global mean; replaying a Food.com user's ratings gives exactly the precomputed profile). This is the cold start for app users: about 10 ratings already personalize. It changes the preference score only, not the embeddings (no retraining).
+- Recipe routes: `GET /recipes/search?q=` (every word in the name, most rated first), `GET /recipes/onboarding` (popular recipes, as different as possible from each other: greedy on ingredient and title-word Jaccard), `GET /recipes/next` (one popular recipe made of ingredients the user's ratings don't cover yet, randomized by `seed`, `skip` to pass), `GET|DELETE /recipe_ratings/...`. They take `diet` / `allergies` and apply the ranker's keyword rules to the ingredients **and** to the recipe title, plus title rules for meat / fish (the cleaned ingredient lists sometimes lose the main ingredient: "Pulled Pork (Crock Pot)" = onion, ginger ale, barbecue sauce).
 - Optional `/recommend` fields: `candidates` (only these ingredients may be returned, e.g. a fridge), `exclude` (never returned, not stored as feedback) and `history_user_id` (whose rating history personalizes, e.g. a Food.com profile linked to an app account; feedback is still read from `user_id`). `/profile` takes `history_user_id` too.
 
 `/recommend` serves the trained model when `artifacts/ingredient_embeddings.npy` exists (`"mock": false`, check `GET /health`), and falls back to the mock otherwise or with `FOODPAIRING_MOCK=1`.
@@ -169,6 +171,10 @@ at home, via the `candidates` field of `/recommend`), **Mon historique**, **Mon 
 (diet, allergies, ingredients never to suggest, what the model learned from the user's feedback,
 Food.com profile link, e-mail, password), **Administration** (admins only: overview, user
 management, logs, API checks), **À propos**.
+
+**Noter des recettes** (⭐): on the first login, a new account is sent once to 10 starter
+recipes to rate (can be skipped; `onboarding_done` on the account). The page also offers one
+recipe to rate at each visit, a search, and the list of the user's ratings (editable).
 
 Feedback buttons map to the API feedback loop: 👍 `like`, 👎 `dislike`, 🚫 "Pas avec ça"
 `not_for_me`, ⚠️ `allergic` (with confirmation), 🍳 `cooked`. The app does no filtering of its

@@ -122,7 +122,10 @@ class HybridRanker:
         config: RankingConfig | None = None,
         cooccurrence: sp.csr_matrix | None = None,
         rating_profiles=None,
+        rating_data=None,
     ):
+        """``rating_data`` (src.data.rating_profiles.RatingData): lets the ranker build a
+        profile at request time from recipe ratings given in the app (``recipe_ratings``)."""
         self.cfg = config or RankingConfig()
         if self.cfg.emb_similarity not in ("cosine", "dot"):
             raise ValueError(f"emb_similarity must be cosine or dot, got {self.cfg.emb_similarity!r}")
@@ -154,6 +157,8 @@ class HybridRanker:
             {int(u): i for i, u in enumerate(user_ids)} if user_ids is not None else {}
         )
         self.rating_profiles = rating_profiles
+        self.rating_data = rating_data
+        self.raw_emb = raw
         self.rating_row = {}
         self.user_vecs = None
         if rating_profiles is not None:
@@ -162,7 +167,7 @@ class HybridRanker:
                 self.user_vecs = rating_profiles.user_vectors(raw)
 
     def preference(self, user_id, liked: Sequence[str] | None = None,
-                   disliked: Sequence[str] | None = None) -> np.ndarray:
+                   disliked: Sequence[str] | None = None, recipe_ratings=None) -> np.ndarray:
         """Preference of ``user_id`` for every ingredient, updated with explicit feedback.
 
         Starts from the profile learned from the user's ratings (zeros for a user without
@@ -170,7 +175,7 @@ class HybridRanker:
         close neighbours are raised, a disliked ingredient is set to -1 (its neighbours are
         left untouched). A new user is therefore personalized from their first like.
         """
-        pref = self._history_preference(user_id).copy()
+        pref = self._history_preference(user_id, recipe_ratings).copy()
         liked_ids = self._resolve_exact(liked)
         if liked_ids:
             close, _ = self._closeness(liked_ids)
@@ -180,16 +185,17 @@ class HybridRanker:
             pref[disliked_ids] = -1.0
         return pref.astype(np.float32)
 
-    def profile_summary(self, user_id, liked=None, disliked=None, n: int = 10) -> dict:
+    def profile_summary(self, user_id, liked=None, disliked=None, n: int = 10,
+                        recipe_ratings=None) -> dict:
         """Top liked / disliked ingredients of the (feedback-updated) profile, for display."""
-        pref = self.preference(user_id, liked, disliked)
+        pref = self.preference(user_id, liked, disliked, recipe_ratings)
         pos = [int(i) for i in np.argsort(-pref)[:n] if pref[i] > 0]
         neg = [int(i) for i in np.argsort(pref)[:n] if pref[i] < 0]
         return {"likes": [{"name": self.id_to_name[i], "value": round(float(pref[i]), 3)} for i in pos],
                 "dislikes": [{"name": self.id_to_name[i], "value": round(float(pref[i]), 3)} for i in neg],
-                "has_rating_history": bool(self._history_preference(user_id).any())}
+                "has_rating_history": bool(self._history_preference(user_id, recipe_ratings).any())}
 
-    def _history_preference(self, user_id) -> np.ndarray:
+    def _history_preference(self, user_id, recipe_ratings=None) -> np.ndarray:
         """Preference learned from the user's past ratings (zeros for an unknown user).
 
         frequency: share of the ingredient in the user's 5/5 recipes (min-max scaled).
@@ -197,9 +203,16 @@ class HybridRanker:
         embedding: min-max scaled cosine between the user vector and each ingredient.
         hybrid:    mean of rating and embedding.
         rating / embedding / hybrid are multiplied by the user's confidence.
+
+        ``recipe_ratings`` [(recipe_id, rating)]: ratings given in the app. With rating_data, the
+        profile is rebuilt with the same formula from these ratings plus the train ratings of
+        ``user_id`` if it is a Food.com user (rating sources only; frequency ignores them).
         """
         n = len(self.vocab)
         zeros = np.zeros(n, dtype=np.float32)
+        if recipe_ratings and self.rating_data is not None and self.cfg.pref_source != "frequency":
+            return self._app_rating_preference(user_id, tuple((int(r), float(v))
+                                                              for r, v in recipe_ratings))
         if user_id is None:
             return zeros
         try:
@@ -215,7 +228,31 @@ class HybridRanker:
         row = self.rating_row.get(uid)
         if row is None:
             return zeros
-        rp = self.rating_profiles
+        vec = self.user_vecs[row] if self.user_vecs is not None else None
+        return self._pref_from_profile(self.rating_profiles, row, vec)
+
+    def _app_rating_preference(self, user_id, ratings: tuple) -> np.ndarray:
+        """Profile rebuilt from app ratings (+ Food.com train ratings of user_id), cached:
+        a heavy Food.com user takes ~0.25 s and the fridge page asks once per ingredient."""
+        cache = self.__dict__.setdefault("_app_pref_cache", {})
+        key = (str(user_id), ratings)
+        if key not in cache:
+            rp = self.rating_data.profile_for(self.rating_data.ratings_of(user_id) + list(ratings))
+            if rp is None:
+                pref = np.zeros(len(self.vocab), dtype=np.float32)
+            else:
+                vec = rp.user_vectors(self.raw_emb)[0] \
+                    if self.cfg.pref_source in ("embedding", "hybrid") else None
+                pref = self._pref_from_profile(rp, 0, vec)
+            if len(cache) >= 256:
+                cache.pop(next(iter(cache)))
+            cache[key] = pref
+        return cache[key]
+
+    def _pref_from_profile(self, rp, row: int, user_vec) -> np.ndarray:
+        """Preference vector of row ``row`` of RatingProfiles ``rp`` (rating sources)."""
+        src = self.cfg.pref_source
+        zeros = np.zeros(len(self.vocab), dtype=np.float32)
         parts = []
         if src in ("rating", "hybrid"):
             if self.cfg.profile_combine == "net" and rp.net is not None:
@@ -225,8 +262,8 @@ class HybridRanker:
                 dis = _minmax(np.asarray(rp.dislike.getrow(row).todense()).ravel().astype(np.float32))
                 parts.append(like - self.cfg.neg_weight * dis)
         if src in ("embedding", "hybrid"):
-            u = self.user_vecs[row]
-            parts.append(_minmax(self.emb_unit @ u) if np.any(u) else zeros)
+            u = user_vec
+            parts.append(_minmax(self.emb_unit @ u) if u is not None and np.any(u) else zeros)
         return (np.mean(parts, axis=0) * float(rp.confidence[row])).astype(np.float32)
 
     # ------------------------------------------------------------------ public
@@ -241,8 +278,12 @@ class HybridRanker:
         liked: Sequence[str] | None = None,
         disliked: Sequence[str] | None = None,
         candidates: Sequence[str] | None = None,
+        recipe_ratings=None,
     ) -> list[dict]:
         """Return ranked pairing suggestions with scores and explanation hooks.
+
+        ``recipe_ratings`` [(recipe_id, rating 1-5)]: recipes rated in the app, folded into the
+        user's rating profile (see _history_preference).
 
         ``liked`` / ``disliked``: the user's explicit feedback on ingredients (feedback loop).
         It updates the preference vector (see preference()); disliked ingredients are also
@@ -272,7 +313,8 @@ class HybridRanker:
         # preference score: rating history updated with explicit feedback (see preference())
         liked_ids = [i for i in self._resolve_exact(liked) if i not in q_ids]
         disliked_ids = self._resolve_exact(disliked)
-        pref_score = self.preference(user_id, [self.id_to_name[i] for i in liked_ids], disliked)
+        pref_score = self.preference(user_id, [self.id_to_name[i] for i in liked_ids], disliked,
+                                     recipe_ratings)
         fb_pos, fb_pos_src = self._closeness(liked_ids)
 
         # co-occurrence score = sum of log(1 + count) with the query (train recipes)
@@ -398,6 +440,27 @@ class HybridRanker:
             ban |= self._match_keywords(keys)
         return ban
 
+    def ban_pattern(self, diet: str | None, allergies: Sequence[str] | None) -> re.Pattern | None:
+        """Whole-word regex of every keyword banned by ``diet`` / ``allergies`` (same lists as
+        _diet_ban / _allergy_ban), to filter free text such as recipe names. None if nothing."""
+        keys = []
+        for a in allergies or []:
+            keys += self.cfg.allergy_keywords.get(a.lower(), [a.lower()])
+        d = (diet or "").lower()
+        dairy = self.cfg.allergy_keywords.get("dairy", [])
+        egg = self.cfg.allergy_keywords.get("egg", [])
+        if d == "vegan":
+            keys += list(MEAT_KEYWORDS + FISH_KEYWORDS + VEGETARIAN_EXTRA_KEYWORDS) + dairy + egg + ["honey"]
+        elif d == "vegetarian":
+            keys += list(MEAT_KEYWORDS + FISH_KEYWORDS + VEGETARIAN_EXTRA_KEYWORDS)
+        elif d == "pescatarian":
+            keys += list(MEAT_KEYWORDS)
+        if not keys:
+            return None
+        exceptions = tuple(sorted(
+            (k, tuple(qs)) for k, qs in self.cfg.keyword_exceptions.items() if k in keys))
+        return _keyword_regex(tuple(dict.fromkeys(keys)), exceptions)
+
     def _diet_ban(self, diet: str | None) -> set[int]:
         if not diet:
             return set()
@@ -472,8 +535,18 @@ def load_ranker(
         uids = np.load(processed_dir / "user_profile_ids.npy")
     cooc = train_cooccurrence(processed_dir) if config.delta_cooc else None
     rp = rating_profiles_for(processed_dir, config)
+    rd = rating_data_for(processed_dir, config)
     return HybridRanker(emb, vocab, chem, npmi, profiles, uids, config, cooccurrence=cooc,
-                        rating_profiles=rp)
+                        rating_profiles=rp, rating_data=rd)
+
+
+def rating_data_for(processed_dir: str | Path, config: RankingConfig):
+    """Data to build app users' profiles from their recipe ratings (None if not available)."""
+    if config.pref_source == "frequency" or not (Path(processed_dir) / "interactions_train.parquet").exists():
+        return None
+    from src.data.rating_profiles import load_rating_data
+    return load_rating_data(processed_dir, config.profile_shrink_k, config.dislike_below_rating,
+                            config.profile_conf_k, config.profile_idf, config.profile_alpha)
 
 
 def rating_profiles_for(processed_dir: str | Path, config: RankingConfig):

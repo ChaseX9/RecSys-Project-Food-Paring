@@ -175,3 +175,59 @@ def admin_action(action: str, actor: str, username: str, base_url: str = DEFAULT
 
 def admin_delete_user(actor: str, username: str, base_url: str = DEFAULT_API_URL) -> None:
     _request("DELETE", base_url, f"/admin/users/{username}", params={"actor": actor})
+
+
+
+# ----------------------------------------------------------- recipe ratings
+def _filters(user_id: str | None, diet: str | None, allergies: list[str] | None) -> dict:
+    params = {}
+    if user_id:
+        params["user_id"] = user_id
+    if diet:
+        params["diet"] = diet
+    if allergies:
+        params["allergies"] = list(allergies)
+    return params
+
+
+def recipes_search(query: str, user_id: str | None = None, diet: str | None = None,
+                   allergies: list[str] | None = None, limit: int = 20,
+                   base_url: str = DEFAULT_API_URL) -> list[dict]:
+    params = {"q": query, "limit": limit} | _filters(user_id, diet, allergies)
+    return _request("GET", base_url, "/recipes/search", params=params).json()
+
+
+def recipes_onboarding(user_id: str | None = None, diet: str | None = None,
+                       allergies: list[str] | None = None, n: int = 10,
+                       base_url: str = DEFAULT_API_URL) -> list[dict]:
+    params = {"n": n} | _filters(user_id, diet, allergies)
+    return _request("GET", base_url, "/recipes/onboarding", params=params).json()
+
+
+def recipe_next(user_id: str, diet: str | None = None, allergies: list[str] | None = None,
+                skip: list[int] | None = None, seed: int | None = None,
+                base_url: str = DEFAULT_API_URL) -> dict | None:
+    """One recipe to rate, or None when there is nothing left to propose."""
+    params = _filters(user_id, diet, allergies)
+    if skip:
+        params["skip"] = list(skip)
+    if seed is not None:
+        params["seed"] = seed
+    try:
+        return _request("GET", base_url, "/recipes/next", params=params).json()
+    except APIError as e:
+        if e.status == 404:
+            return None
+        raise
+
+
+def recipe_ratings(user_id: str, base_url: str = DEFAULT_API_URL) -> list[dict]:
+    return _request("GET", base_url, f"/recipe_ratings/{user_id}").json()
+
+
+def rate_recipe(user_id: str, recipe_id: int, rating: int, base_url: str = DEFAULT_API_URL) -> None:
+    _request("PUT", base_url, f"/recipe_ratings/{user_id}/{recipe_id}", json={"rating": rating})
+
+
+def unrate_recipe(user_id: str, recipe_id: int, base_url: str = DEFAULT_API_URL) -> None:
+    _request("DELETE", base_url, f"/recipe_ratings/{user_id}/{recipe_id}")

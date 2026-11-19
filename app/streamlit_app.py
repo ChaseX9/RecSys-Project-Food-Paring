@@ -31,19 +31,31 @@ P = {
                        default=True, url_path="accords"),
     "frigo": st.Page("views/frigo.py", title="Mon frigo", icon="🧊"),
     "historique": st.Page("views/historique.py", title="Mon historique", icon="📜"),
+    "recettes": st.Page("views/recettes.py", title="Noter des recettes", icon="⭐"),
     "profil": st.Page("views/profil.py", title="Mon profil", icon="👤"),
     "admin": st.Page("views/admin.py", title="Administration", icon="🛠️"),
     "about": st.Page("views/a_propos.py", title="À propos", icon="ℹ️"),
 }
 if user and user.is_admin:
-    visible = ["accords", "frigo", "historique", "profil", "admin", "about"]
+    visible = ["accords", "frigo", "recettes", "historique", "profil", "admin", "about"]
 elif user:
-    visible = ["accords", "frigo", "historique", "profil", "about"]
+    visible = ["accords", "frigo", "recettes", "historique", "profil", "about"]
 elif guest:
-    visible = ["accords", "frigo", "about"]
+    visible = ["accords", "frigo", "recettes", "about"]
 else:
     visible = ["login", "about"]
 nav = st.navigation([P[k] for k in visible], position="hidden")
+
+# Pages can tell a fresh visit from a rerun (e.g. a new recipe to rate at every visit).
+st.session_state.page_changed = st.session_state.get("current_page") != nav.url_path
+st.session_state.current_page = nav.url_path
+
+# First login: send the user once to the recipe ratings, so the model learns their taste.
+if user and not user.onboarding_done and not st.session_state.get("onboarding_redirected"):
+    st.session_state.onboarding_redirected = True
+    st.session_state.flash = ("Bienvenue ! Note quelques recettes pour que les suggestions "
+                              "collent à tes goûts (tu peux passer).")
+    st.switch_page(P["recettes"])
 
 # -------------------------------------------------------------- sidebar top
 uri = logo_data_uri(st.session_state.dark_mode)  # ECE logo, cut out and recoloured per theme

@@ -28,7 +28,7 @@ USERNAME_RE = re.compile(r"^[a-z0-9_.-]{3,30}$")
 MIN_PASSWORD = 8
 LIST_FIELDS = ("allergies", "disliked", "fridge")
 EDITABLE = {"display_name", "email", "diet", "allergies", "disliked", "top_k", "food_com_id",
-            "fridge"}
+            "fridge", "onboarding_done"}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS users (
     fridge       TEXT    NOT NULL DEFAULT '[]', -- JSON list of ingredients the user has at home
     top_k        INTEGER NOT NULL DEFAULT 10,
     food_com_id  TEXT,                          -- linked Food.com profile (rating history)
+    onboarding_done INTEGER NOT NULL DEFAULT 0, -- recipe-rating onboarding done or skipped
     created_at   TEXT    NOT NULL,
     last_login   TEXT,
     salt         TEXT    NOT NULL,
@@ -91,6 +92,7 @@ def _public(row: sqlite3.Row) -> dict:
     d = dict(row)
     d.pop("salt"), d.pop("pw_hash")
     d["active"] = bool(d["active"])
+    d["onboarding_done"] = bool(d["onboarding_done"])
     for k in LIST_FIELDS:
         d[k] = json.loads(d[k])
     return d
@@ -99,9 +101,13 @@ def _public(row: sqlite3.Row) -> dict:
 def init_db(db_path, seed_demo: bool = True) -> None:
     with connect(db_path) as conn:
         conn.executescript(SCHEMA)
+        columns = {r["name"] for r in conn.execute("PRAGMA table_info(users)")}
+        if "onboarding_done" not in columns:  # databases created before the recipe ratings
+            conn.execute("ALTER TABLE users ADD COLUMN onboarding_done INTEGER NOT NULL DEFAULT 0")
         if seed_demo and conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
             for username, password, extra in DEMO_ACCOUNTS:
-                _insert(conn, username, password, **extra)
+                # demo profiles come pre-filled: no recipe-rating onboarding on their first login
+                _insert(conn, username, password, onboarding_done=True, **extra)
 
 
 # ------------------------------------------------------------------ validation
@@ -142,6 +148,8 @@ def _validate_changes(changes: dict) -> dict:
         out["food_com_id"] = fid or None
     if "diet" in out and out["diet"] not in DIETS:
         raise UserError(400, "Régime inconnu.")
+    if "onboarding_done" in out:
+        out["onboarding_done"] = int(bool(out["onboarding_done"]))
     if "top_k" in out and not 1 <= int(out["top_k"]) <= 50:
         raise UserError(400, "Nombre de suggestions : entre 1 et 50.")
     for k in LIST_FIELDS:
@@ -158,13 +166,15 @@ def _email_taken(conn, email: str, except_user: str | None = None) -> bool:
 def _insert(conn, username: str, password: str, display_name: str, email: str, role: str = "user",
             **profile) -> None:
     salt, pw_hash = _new_password(password)
-    fields = {"diet": None, "top_k": 10, "food_com_id": None, **profile}
+    fields = {"diet": None, "top_k": 10, "food_com_id": None, "onboarding_done": False, **profile}
     conn.execute(
         "INSERT INTO users (username, display_name, email, role, diet, allergies, disliked, fridge, "
-        "top_k, food_com_id, created_at, salt, pw_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "top_k, food_com_id, onboarding_done, created_at, salt, pw_hash) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (username, display_name, email, role, fields["diet"],
          *(json.dumps(fields.get(k, [])) for k in LIST_FIELDS),
-         fields["top_k"], fields["food_com_id"], _now(), salt, pw_hash),
+         fields["top_k"], fields["food_com_id"], int(fields["onboarding_done"]), _now(), salt,
+         pw_hash),
     )
 
 
@@ -290,8 +300,8 @@ def reset_password(db_path, actor: str, username: str) -> str:
 
 
 def delete_user(db_path, actor: str, username: str) -> None:
-    """Deletes the account and its interactions (a new account reusing the username must not
-    inherit the old one's likes, dislikes and allergies)."""
+    """Deletes the account, its interactions and its recipe ratings (a new account reusing the
+    username must not inherit the old one's likes, dislikes, allergies and tastes)."""
     with connect(db_path) as conn:
         _require_admin(conn, actor)
         if username == actor:
@@ -301,3 +311,4 @@ def delete_user(db_path, actor: str, username: str) -> None:
             raise UserError(409, "Impossible : il doit rester au moins un administrateur actif.")
         conn.execute("DELETE FROM users WHERE username = ?", (username,))
         conn.execute("DELETE FROM interactions WHERE user_id = ?", (username,))
+        conn.execute("DELETE FROM recipe_ratings WHERE user_id = ?", (username,))
