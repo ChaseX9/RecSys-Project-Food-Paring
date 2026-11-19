@@ -60,6 +60,7 @@ def mock_recommend(
     allergies: list[str] | None = None,
     diet: str | None = None,
     vocab_path: str | Path = VOCAB_PATH,
+    disliked: list[str] | None = None,
 ) -> list[dict]:
     """Deterministic fake recommendations: same query -> same output.
 
@@ -69,11 +70,13 @@ def mock_recommend(
     (what HybridRanker returns for an unknown user_id).
     """
     query = {i.strip().lower() for i in ingredients}
+    banned = {d.strip().lower() for d in disliked or []}  # feedback loop: never show a disliked item
     allergy_keys = [a.strip().lower() for a in allergies or [] if a.strip()]
 
     candidates = [
         n for n in dict.fromkeys(load_vocab(vocab_path))
-        if n not in query and n not in STAPLES and not any(k in n for k in allergy_keys)
+        if n not in query and n not in STAPLES and n not in banned
+        and not any(k in n for k in allergy_keys)
     ]
     rng = random.Random(_seed(ingredients, allergies, diet))
     pool = rng.sample(candidates, min(POOL_SIZE, len(candidates)))
@@ -93,6 +96,58 @@ def mock_recommend(
     return [
         {"rank": rank, "name": it["name"], "score": it["score"], "emb_score": it["emb_score"],
          "chem_score": it["chem_score"], "pref_score": it["pref_score"],
-         "explanation": f"[mock] {it['name']} is often paired with {query_str}."}
+         "explanation": f"[mock] {it['name']} is often paired with {query_str}.", "feedback": None}
         for rank, it in enumerate(items[:top_k], 1)
     ]
+
+
+# --------------------------------------------------------------------------- real model
+ROOT = Path(__file__).resolve().parents[1]
+EMBEDDINGS_PATH = ROOT / "artifacts" / "ingredient_embeddings.npy"
+PROCESSED_DIR = ROOT / "data" / "processed"
+
+
+class ModelRecommender:
+    """Trained NLGCL embeddings + HybridRanker + explanations, loaded once at startup."""
+
+    def __init__(self, processed_dir: str | Path = PROCESSED_DIR,
+                 embeddings_path: str | Path = EMBEDDINGS_PATH, ranker=None):
+        import pandas as pd
+        import scipy.sparse as sp
+
+        from src.ranking.hybrid import load_ranker
+
+        processed_dir = Path(processed_dir)
+        self.ranker = ranker or load_ranker(processed_dir, embeddings_path)
+        self.npmi = self.ranker.npmi
+        self.chemical = self.ranker.chemical
+        self.compounds = self.ing_comp = None
+        comp, ic = processed_dir / "compounds.csv", processed_dir / "ingredient_compounds.npz"
+        if comp.exists() and ic.exists():
+            self.compounds = pd.read_csv(comp)
+            self.ing_comp = sp.load_npz(ic).tocsr()
+
+    def recommend(self, ingredients, top_k=10, user_id=None, allergies=None, diet=None,
+                  liked=None, disliked=None) -> list[dict]:
+        from src.explain.reasons import attach_explanations
+
+        recs = self.ranker.recommend(ingredients, user_id=user_id, allergies=allergies, diet=diet,
+                                     top_k=top_k, liked=liked, disliked=disliked)
+        recs = attach_explanations(recs, ingredients, self.npmi, self.chemical,
+                                   self.compounds, self.ing_comp)
+        out = []
+        for r in recs:
+            expl = r["explanation"]
+            if r.get("feedback"):
+                expl = f"{expl} + {r['feedback']}"
+            out.append({k: r[k] for k in ("rank", "name", "score", "emb_score", "chem_score", "pref_score")}
+                       | {"explanation": expl, "feedback": r.get("feedback")})
+        return out
+
+    def profile(self, user_id, liked=None, disliked=None, n: int = 10) -> dict:
+        """The user's preference profile (rating history updated with feedback)."""
+        return self.ranker.profile_summary(user_id, liked, disliked, n)
+
+
+def model_available(embeddings_path: str | Path = EMBEDDINGS_PATH) -> bool:
+    return Path(embeddings_path).exists()
