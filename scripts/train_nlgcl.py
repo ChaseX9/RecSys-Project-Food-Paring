@@ -14,6 +14,7 @@ import yaml
 
 from src.graph.build_graph import build_ingredient_graph, save_graph
 from src.training.train import save_artifacts, train_nlgcl
+from src.training.validation import build_validation
 
 
 def main():
@@ -24,6 +25,8 @@ def main():
     p.add_argument("--device", default="cpu")
     p.add_argument("--epochs", type=int, default=None)
     p.add_argument("--rebuild-graph", action="store_true")
+    p.add_argument("--eval-config", default="configs/eval.yaml")
+    p.add_argument("--no-val", action="store_true", help="skip per-epoch validation (faster)")
     args = p.parse_args()
 
     cfg_path = ROOT / args.config
@@ -59,6 +62,13 @@ def main():
     tcfg = cfg.get("train", {})
     epochs = args.epochs or tcfg.get("epochs", 40)
 
+    validate = None
+    if not args.no_val:
+        with open(ROOT / args.eval_config, encoding="utf-8") as f:
+            ecfg = yaml.safe_load(f)
+        validate = build_validation(processed, graph["adj"], cfg.get("ranking", {}), ecfg,
+                                    max_cases=tcfg.get("val_max_cases"))["validate"]
+
     print(
         f"Training NLGCL  emb={mcfg.get('emb_dim', 64)}  L={mcfg.get('n_layers', 3)}  "
         f"G={mcfg.get('n_groups', 2)}  epochs={epochs}  device={args.device}"
@@ -78,6 +88,10 @@ def main():
         device=args.device,
         seed=tcfg.get("seed", 42),
         log_every=tcfg.get("log_every", 5),
+        validate=validate,
+        val_every=tcfg.get("val_every", 1),
+        select_on=tcfg.get("select_on", "val_emb_ndcg@10"),
+        patience=tcfg.get("patience"),
     )
     save_artifacts(embeddings, meta, model, out_dir)
     print("Training finished.")

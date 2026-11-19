@@ -1,7 +1,13 @@
 """Hybrid ranking for food pairing.
 
-Score = α · embedding_sim + β · chemical_sim + γ · preference_score
+Score = α · embedding + β · chemical + γ · preference + δ · co-occurrence
 Hard filters: allergies / diet / exclude query ingredients.
+
+With ``normalize`` each component is min-max scaled to [0, 1] per query, so the weights
+mean what they say (raw cosine, Jaccard and L1 profiles live on very different scales).
+``emb_similarity: dot`` keeps the embedding norm, which LightGCN-style models use to encode
+how often an ingredient is used; cosine throws it away and over-recommends rare ingredients.
+The co-occurrence term counts pairs in *train* recipes only (no leakage).
 """
 from __future__ import annotations
 
@@ -21,6 +27,9 @@ class RankingConfig:
     alpha_emb: float = 0.6
     beta_chem: float = 0.25
     gamma_pref: float = 0.15
+    delta_cooc: float = 0.0
+    emb_similarity: str = "cosine"   # "cosine" | "dot"
+    normalize: bool = False          # per-query min-max of each component
     top_k: int = 20
     # diet / allergy keyword filters, matched as whole words (optional plural s/es).
     # Compound words ("crabmeat", "soybean", ...) must be listed explicitly since
@@ -91,12 +100,20 @@ class HybridRanker:
         user_profiles: sp.csr_matrix | None = None,
         user_ids: np.ndarray | None = None,
         config: RankingConfig | None = None,
+        cooccurrence: sp.csr_matrix | None = None,
     ):
+        self.cfg = config or RankingConfig()
+        if self.cfg.emb_similarity not in ("cosine", "dot"):
+            raise ValueError(f"emb_similarity must be cosine or dot, got {self.cfg.emb_similarity!r}")
         self.emb = embeddings.astype(np.float32)
-        # L2-normalize for cosine
-        norms = np.linalg.norm(self.emb, axis=1, keepdims=True)
-        norms[norms == 0] = 1.0
-        self.emb = self.emb / norms
+        if self.cfg.emb_similarity == "cosine":
+            norms = np.linalg.norm(self.emb, axis=1, keepdims=True)
+            norms[norms == 0] = 1.0
+            self.emb = self.emb / norms
+        self.cooc = None
+        if cooccurrence is not None:
+            self.cooc = cooccurrence.tocsr().astype(np.float32)
+            self.cooc.data = np.log1p(self.cooc.data)
 
         self.vocab = vocab.reset_index(drop=True)
         self.name_to_id = {n: i for i, n in enumerate(self.vocab["name"])}
@@ -107,7 +124,6 @@ class HybridRanker:
         self.user_id_to_row = (
             {int(u): i for i, u in enumerate(user_ids)} if user_ids is not None else {}
         )
-        self.cfg = config or RankingConfig()
 
     # ------------------------------------------------------------------ public
     def recommend(
@@ -125,7 +141,7 @@ class HybridRanker:
         if not q_ids:
             return []
 
-        # embedding score = mean cosine to query ingredients
+        # embedding score = mean similarity (cosine or dot) to query ingredients
         q_emb = self.emb[q_ids].mean(axis=0)
         emb_score = self.emb @ q_emb  # (N,)
 
@@ -145,10 +161,20 @@ class HybridRanker:
             if row is not None:
                 pref_score = np.asarray(self.user_profiles.getrow(row).todense()).ravel()
 
+        # co-occurrence score = sum of log(1 + count) with the query (train recipes)
+        cooc_score = np.zeros(len(self.vocab), dtype=np.float32)
+        if self.cooc is not None and self.cfg.delta_cooc:
+            cooc_score = np.asarray(self.cooc[q_ids].sum(axis=0)).ravel().astype(np.float32)
+
+        if self.cfg.normalize:
+            emb_score, chem_score, pref_score, cooc_score = (
+                _minmax(x) for x in (emb_score, chem_score, pref_score, cooc_score))
+
         score = (
             self.cfg.alpha_emb * emb_score
             + self.cfg.beta_chem * chem_score
             + self.cfg.gamma_pref * pref_score
+            + self.cfg.delta_cooc * cooc_score
         )
 
         # hard filters
@@ -179,6 +205,7 @@ class HybridRanker:
                 "emb_score": float(emb_score[idx]),
                 "chem_score": float(chem_score[idx]),
                 "pref_score": float(pref_score[idx]),
+                "cooc_score": float(cooc_score[idx]),
                 "query_ids": q_ids,
             })
         return results
@@ -235,11 +262,45 @@ class HybridRanker:
         return set()
 
 
+def _minmax(x: np.ndarray) -> np.ndarray:
+    lo, hi = float(x.min()), float(x.max())
+    if hi <= lo:
+        return np.zeros_like(x)
+    return (x - lo) / (hi - lo)
+
+
+def ranking_config_from_yaml(path: str | Path = "configs/model.yaml") -> RankingConfig:
+    """RankingConfig from the ``ranking`` block of configs/model.yaml (unknown keys ignored)."""
+    import yaml
+
+    path = Path(path)
+    if not path.is_absolute():
+        path = Path(__file__).resolve().parents[2] / path
+    with open(path, encoding="utf-8") as f:
+        block = (yaml.safe_load(f) or {}).get("ranking", {}) or {}
+    return RankingConfig(**{k: v for k, v in block.items() if k in RankingConfig.__dataclass_fields__})
+
+
+def train_cooccurrence(processed_dir: str | Path) -> sp.csr_matrix:
+    """Ingredient co-occurrence counts over train recipes only (is_train_recipe)."""
+    processed_dir = Path(processed_dir)
+    ri = sp.load_npz(processed_dir / "recipe_ingredient.npz").tocsr()
+    mask = pd.read_parquet(processed_dir / "recipes.parquet",
+                           columns=["is_train_recipe"])["is_train_recipe"].to_numpy(dtype=bool)
+    ri = ri[mask]
+    co = (ri.T @ ri).tocsr()
+    co.setdiag(0)
+    co.eliminate_zeros()
+    return co
+
+
 def load_ranker(
     processed_dir: str | Path,
     embedding_path: str | Path,
     config: RankingConfig | None = None,
 ) -> HybridRanker:
+    """Load everything the ranker needs. ``config=None`` reads configs/model.yaml."""
+    config = config or ranking_config_from_yaml()
     processed_dir = Path(processed_dir)
     emb = np.load(embedding_path)
     vocab = pd.read_csv(processed_dir / "ingredients_vocab.csv")
@@ -255,4 +316,5 @@ def load_ranker(
     if (processed_dir / "user_profiles.npz").exists():
         profiles = sp.load_npz(processed_dir / "user_profiles.npz").tocsr()
         uids = np.load(processed_dir / "user_profile_ids.npy")
-    return HybridRanker(emb, vocab, chem, npmi, profiles, uids, config)
+    cooc = train_cooccurrence(processed_dir) if config.delta_cooc else None
+    return HybridRanker(emb, vocab, chem, npmi, profiles, uids, config, cooccurrence=cooc)

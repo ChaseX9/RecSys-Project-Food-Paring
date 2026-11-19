@@ -11,16 +11,24 @@ model:
   scope: heterogeneous
 
 train:
-  epochs: 40
+  epochs: 150         # upper bound: early stopping on val picks the epoch
   batch_size: 4096
-  lr: 0.001
-  lambda_cl: 1.0e-5   # weight of NLGCL contrastive loss
+  lr: 0.005           # chosen on val among 1e-3 / 5e-3 / 1e-2 (1e-3 underfits)
+  lambda_cl: 0.1      # weight of NLGCL contrastive loss (1e-5 had no effect: same scores as LightGCN, see ablations)
   lambda_reg: 1.0e-4  # L2 on embeddings
   seed: 42
   log_every: 5
+  val_every: 1        # validate every N epochs (val split only, never test)
+  select_on: val_emb_ndcg@10   # keep the best epoch on this val metric (embedding alone = model quality)
+  patience: 15        # stop after N validations without improvement (null = never)
+  val_max_cases: null # null = all val cases
 
+# Weights chosen on the val split (grid search), never on test.
 ranking:
-  alpha_emb: 0.6
-  beta_chem: 0.25
-  gamma_pref: 0.15
+  alpha_emb: 0.35       # NLGCL embedding similarity
+  beta_chem: 0.1        # shared aromatic compounds (FlavorGraph)
+  gamma_pref: 0.2       # user taste profile (product choice: personalization on; see ablations for its cost)
+  delta_cooc: 0.7       # log co-occurrence in train recipes
+  emb_similarity: cosine
+  normalize: true       # min-max each component per query so the weights are comparable
   top_k: 20
