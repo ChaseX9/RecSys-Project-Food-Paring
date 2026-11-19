@@ -110,15 +110,26 @@ def load_demo_users(n: int = 5) -> list[str]:
     return [str(int(u)) for u in ids[order]]
 
 
+@st.cache_data(ttl=30, show_spinner=False)
+def _display_names(url: str) -> dict[str, str]:
+    """username -> display name of every account (cached: user_label runs once per table row)."""
+    from app import auth
+
+    try:
+        return {u["username"]: u["display_name"] for u in auth.all_users()}
+    except auth.AuthError:
+        return {}
+
+
 def user_label(user_id: str) -> str:
     """Readable name for any id seen by the API: guest, app account or Food.com profile."""
     from app import auth
 
     if user_id == ANONYMOUS or user_id.startswith(auth.GUEST_PREFIX):
         return "Invité"
-    account = auth.store().users.get(user_id)
+    account = _display_names(api_url()).get(user_id)
     if account:
-        return account.display_name
+        return account
     demo = load_demo_users()
     if user_id in demo:
         return f"Profil Food.com n°{demo.index(user_id) + 1}"

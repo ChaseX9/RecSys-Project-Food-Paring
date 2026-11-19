@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from api.main import create_app
 from app import api_client, auth
+from tests.conftest import route_api_client
 
 streamlit_testing = pytest.importorskip("streamlit.testing.v1")
 AppTest = streamlit_testing.AppTest
@@ -14,24 +15,23 @@ ENTRY = str(Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py")
 
 
 @pytest.fixture(autouse=True)
-def fresh_accounts():
-    auth.store.clear()  # demo accounts re-created for every test
+def fresh_app_state():
+    auth.store.clear()  # app event log / settings re-created for every test
     yield
     auth.store.clear()
 
 
 @pytest.fixture
 def api(tmp_path, monkeypatch):
-    """Route every api_client call through a FastAPI TestClient backed by a temp SQLite DB."""
+    """Route every api_client call through a FastAPI TestClient backed by a temp SQLite DB
+    (accounts included: the demo accounts are created on startup)."""
     with TestClient(create_app(str(tmp_path / "test.db"))) as client:
-        def fake_request(method, base_url, path, **kwargs):
-            r = client.request(method, path, **kwargs)
-            if r.status_code >= 400:
-                raise api_client.APIError(f"HTTP {r.status_code}")
-            return r
-
-        monkeypatch.setattr(api_client, "_request", fake_request)
+        route_api_client(client, monkeypatch)
         yield client
+
+
+def _user(api, username: str) -> dict:
+    return api.get(f"/users/{username}").json()
 
 
 def _login(username: str | None = "demo", password: str | None = None) -> AppTest:
@@ -60,12 +60,12 @@ def _button(at, prefix):
     return next(b for b in at.button if b.label.startswith(prefix))
 
 
-def test_login_required_then_wrong_password():
+def test_login_required_then_wrong_password(api):
     at = AppTest.from_file(ENTRY, default_timeout=30).run()
     assert at.title[0].value.startswith("👋")
     at = _login("demo", "mauvais")
     assert any("incorrect" in e.value for e in at.error)
-    assert auth.events()[0]["message"] == "Échec de connexion"
+    assert auth.events()[0]["message"].startswith("Échec de connexion")
 
 
 def test_pairings_flow_logs_feedback_under_account(api):
@@ -99,7 +99,7 @@ def test_profile_preferences_prefill_search_and_dislike_is_applied_by_api(api):
 
     first = res["recs"][0]["name"]
     _button(at, "👎").click().run()
-    assert auth.store().users["camille"].disliked == ["cilantro"]  # profile list untouched
+    assert _user(api, "camille")["disliked"] == ["cilantro"]  # profile list untouched
     _button(at, "🔍").click().run()
     assert first not in _names(at)
     assert at.session_state.results["body"]["applied_feedback"]["disliked"] == [first]
@@ -120,7 +120,7 @@ def test_not_for_me_only_applies_to_the_same_search(api):
 def test_feedback_of_food_com_linked_account_is_applied(api):
     """demo is linked to a Food.com profile: ratings come from it, feedback from the account."""
     at = _login("demo")
-    assert auth.store().users["demo"].food_com_id
+    assert _user(api, "demo")["food_com_id"]
     _button(at, "Saumon + citron").click().run()
     _button(at, "🔍").click().run()
     first = _names(at)[0]
@@ -190,18 +190,20 @@ def test_logout_returns_to_login(api):
     assert at.title[0].value.startswith("👋")
 
 
-def test_api_down_shows_error(monkeypatch):
+def test_api_down_shows_error(api, monkeypatch):
+    at = _login("demo")
+
     def down(*a, **k):
         raise api_client.APIError("down")
 
-    monkeypatch.setattr(api_client, "_request", down)
-    at = _login("demo")
+    monkeypatch.setattr(api_client, "_request", down)  # the API goes down after login
     _button(at, "Poulet").click().run()
     _button(at, "🔍").click().run()
     assert any("ne répond pas" in e.value for e in at.error)
+    assert at.session_state.auth_user == "demo"  # still logged in (last known account)
 
 
-def test_theme_toggle_switches_config():
+def test_theme_toggle_switches_config(api):
     from streamlit import config
 
     at = AppTest.from_file(ENTRY, default_timeout=30).run()
@@ -229,7 +231,7 @@ def test_admin_page_renders_for_admin_only(api):
 
 def test_fridge_around_one_ingredient_only_suggests_fridge_items(api):
     at = _goto(_login("demo"), "frigo.py")
-    fridge = set(auth.store().users["demo"].fridge)
+    fridge = set(_user(api, "demo")["fridge"])
     assert set(at.session_state.fridge_sel) == fridge
     at.selectbox[0].set_value("salmon").run()  # base ingredient, from the fridge
     _button(at, "🔍 Trouver les associations").click().run()
@@ -250,13 +252,13 @@ def test_fridge_best_pairs_and_persistence(api):
     _button(at, "🔍 Trouver les meilleurs duos").click().run()
     assert not at.exception
     res = at.session_state.fridge_results
-    fridge = set(auth.store().users["camille"].fridge)
+    fridge = set(_user(api, "camille")["fridge"])
     assert res["pairs"] and all({p["a"], p["b"]} <= fridge for p in res["pairs"])
     assert len({frozenset((p["a"], p["b"])) for p in res["pairs"]}) == len(res["pairs"])
     assert res["star"] in fridge
 
     _button(at, "+ ").click().run()  # quick add is saved to the profile
-    assert len(auth.store().users["camille"].fridge) == len(fridge) + 1
+    assert len(_user(api, "camille")["fridge"]) == len(fridge) + 1
 
 
 def test_fridge_needs_two_items_for_guest(api):
@@ -302,3 +304,30 @@ def test_ingredient_images_photo_or_emoji():
     assert ingredient_emoji("smoked haddock fish") == "🐟"
     assert ingredient_emoji("unknownium") == "🍽️"
     assert "🐟" in ingredient_img("zzz fish")  # no photo -> family emoji
+
+
+def test_accounts_survive_an_app_restart(tmp_path, monkeypatch):
+    """Accounts are in the API database: a new sign-up is still there after a restart."""
+    db_path = str(tmp_path / "persist.db")
+    with TestClient(create_app(db_path, recommender=None)) as client:
+        route_api_client(client, monkeypatch)
+        at = AppTest.from_file(ENTRY, default_timeout=30).run()
+        auth.register("lea.m", "Léa M", "lea@exemple.fr", "motdepasse", "motdepasse")
+    auth.store.clear()
+    with TestClient(create_app(db_path, recommender=None)) as client:
+        route_api_client(client, monkeypatch)
+        at = _login("lea.m", "motdepasse")
+        assert at.session_state.auth_user == "lea.m"
+
+
+def test_sign_up_page_creates_account_in_api(api):
+    at = AppTest.from_file(ENTRY, default_timeout=30).run()
+    signup = [t for t in at.text_input if t.label == "Identifiant"][1]  # 2nd tab
+    signup.input("lea.m")
+    for label, value in [("Prénom et nom", "Léa M"), ("Adresse e-mail", "lea@exemple.fr"),
+                         ("Confirmer le mot de passe", "motdepasse")]:
+        next(t for t in at.text_input if t.label == label).input(value)
+    [t for t in at.text_input if t.label == "Mot de passe"][1].input("motdepasse")
+    _button(at, "Créer mon compte").click().run()
+    assert not at.exception and at.session_state.auth_user == "lea.m"
+    assert _user(api, "lea.m")["display_name"] == "Léa M"

@@ -45,6 +45,15 @@ def model_mode(url: str) -> bool | None:
         return None
 
 
+def fetch_users() -> list[dict]:
+    """All accounts, or [] if the API cannot be reached (the page must still render, e.g. to
+    fix the API address in the last tab)."""
+    try:
+        return auth.all_users()
+    except auth.AuthError:
+        return []
+
+
 def fetch_interactions() -> list[dict] | None:
     try:
         return api_client.interactions(limit=1000, base_url=api_url())
@@ -60,7 +69,7 @@ t_overview, t_users, t_logs, t_services = st.tabs(
 
 # ------------------------------------------------------------------ overview
 with t_overview:
-    users = auth.all_users()
+    users = fetch_users()
     events = auth.events()
     ok, ms = api_client.ping(api_url())
     mode = model_mode(api_url()) if ok else None
@@ -94,7 +103,7 @@ with t_overview:
 
 # --------------------------------------------------------------------- users
 with t_users:
-    users = auth.all_users()
+    users = fetch_users()
     st.dataframe(pd.DataFrame([{
         "Identifiant": u["username"], "Nom": u["display_name"], "E-mail": u["email"],
         "Rôle": auth.ROLES[u["role"]], "Statut": "✅ actif" if u["active"] else "⛔ désactivé",
@@ -102,58 +111,61 @@ with t_users:
         "Créé le": local(u["created_at"])[:10], "Dernière connexion": local(u["last_login"]),
     } for u in users]), hide_index=True, width="stretch")
 
-    left, right = st.columns(2, gap="large")
-    with left:
-        st.subheader("Gérer un compte")
-        target = st.selectbox("Compte", [u["username"] for u in users],
-                              format_func=lambda n: f"{user_label(n)} (@{n})")
-        tu = next(u for u in users if u["username"] == target)
-        is_me = target == admin.username
+    if not users:
+        st.error("Serveur injoignable : impossible de lire les comptes. Vérifie l'adresse de l'API dans « Services & configuration ».")
+    else:
+        left, right = st.columns(2, gap="large")
+        with left:
+            st.subheader("Gérer un compte")
+            target = st.selectbox("Compte", [u["username"] for u in users],
+                                  format_func=lambda n: f"{user_label(n)} (@{n})")
+            tu = next(u for u in users if u["username"] == target)
+            is_me = target == admin.username
 
-        role = st.radio("Rôle", list(auth.ROLES), index=list(auth.ROLES).index(tu["role"]),
-                        format_func=auth.ROLES.get, horizontal=True, key=f"role_{target}")
-        if role != tu["role"]:
-            run(auth.admin_set_role, target, role,
-                success=f"Rôle de @{target} : {auth.ROLES[role]}")
+            role = st.radio("Rôle", list(auth.ROLES), index=list(auth.ROLES).index(tu["role"]),
+                            format_func=auth.ROLES.get, horizontal=True, key=f"role_{target}")
+            if role != tu["role"]:
+                run(auth.admin_set_role, target, role,
+                    success=f"Rôle de @{target} : {auth.ROLES[role]}")
 
-        b1, b2 = st.columns(2)
-        if tu["active"]:
-            if b1.button("⛔ Désactiver le compte", disabled=is_me, width="stretch"):
-                run(auth.admin_set_active, target, False, success=f"@{target} désactivé")
-        elif b1.button("✅ Réactiver le compte", width="stretch"):
-            run(auth.admin_set_active, target, True, success=f"@{target} réactivé")
-        if b2.button("🔑 Réinitialiser le mot de passe", width="stretch"):
-            try:
-                temp = auth.admin_reset_password(admin.username, target)
-                st.success(f"Nouveau mot de passe temporaire pour @{target} : `{temp}`  \n"
-                           "Transmets-le à l'utilisateur : il pourra le changer dans son profil.")
-            except auth.AuthError as e:
-                st.error(str(e))
-        with st.popover("🗑️ Supprimer le compte", disabled=is_me, width="stretch"):
-            st.warning(f"Supprimer définitivement @{target} ? Ses avis déjà enregistrés "
-                       "sont conservés.")
-            if st.button("Oui, supprimer", type="primary", key=f"del_{target}"):
-                run(auth.admin_delete, target, success=f"@{target} supprimé")
-        if is_me:
-            st.caption("Tu ne peux pas désactiver ni supprimer ton propre compte.")
-
-    with right:
-        st.subheader("Créer un compte")
-        with st.form("create_user", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            nu = c1.text_input("Identifiant")
-            nd = c2.text_input("Prénom et nom")
-            ne = st.text_input("Adresse e-mail")
-            c3, c4 = st.columns(2)
-            npw = c3.text_input("Mot de passe", type="password")
-            nr = c4.selectbox("Rôle", list(auth.ROLES), format_func=auth.ROLES.get)
-            if st.form_submit_button("Créer", type="primary"):
+            b1, b2 = st.columns(2)
+            if tu["active"]:
+                if b1.button("⛔ Désactiver le compte", disabled=is_me, width="stretch"):
+                    run(auth.admin_set_active, target, False, success=f"@{target} désactivé")
+            elif b1.button("✅ Réactiver le compte", width="stretch"):
+                run(auth.admin_set_active, target, True, success=f"@{target} réactivé")
+            if b2.button("🔑 Réinitialiser le mot de passe", width="stretch"):
                 try:
-                    auth.register(nu, nd, ne, npw, npw, role=nr, actor=admin.username)
-                    st.session_state.flash = f"Compte @{nu.strip().lower()} créé"
-                    st.rerun()
+                    temp = auth.admin_reset_password(admin.username, target)
+                    st.success(f"Nouveau mot de passe temporaire pour @{target} : `{temp}`  \n"
+                               "Transmets-le à l'utilisateur : il pourra le changer dans son profil.")
                 except auth.AuthError as e:
                     st.error(str(e))
+            with st.popover("🗑️ Supprimer le compte", disabled=is_me, width="stretch"):
+                st.warning(f"Supprimer définitivement @{target} ? Ses avis (j'aime, allergies…) "
+                           "sont supprimés avec le compte.")
+                if st.button("Oui, supprimer", type="primary", key=f"del_{target}"):
+                    run(auth.admin_delete, target, success=f"@{target} supprimé")
+            if is_me:
+                st.caption("Tu ne peux pas désactiver ni supprimer ton propre compte.")
+
+        with right:
+            st.subheader("Créer un compte")
+            with st.form("create_user", clear_on_submit=True):
+                c1, c2 = st.columns(2)
+                nu = c1.text_input("Identifiant")
+                nd = c2.text_input("Prénom et nom")
+                ne = st.text_input("Adresse e-mail")
+                c3, c4 = st.columns(2)
+                npw = c3.text_input("Mot de passe", type="password")
+                nr = c4.selectbox("Rôle", list(auth.ROLES), format_func=auth.ROLES.get)
+                if st.form_submit_button("Créer", type="primary"):
+                    try:
+                        auth.register(nu, nd, ne, npw, npw, role=nr, actor=admin.username)
+                        st.session_state.flash = f"Compte @{nu.strip().lower()} créé"
+                        st.rerun()
+                    except auth.AuthError as e:
+                        st.error(str(e))
 
 # ---------------------------------------------------------------------- logs
 with t_logs:
@@ -277,6 +289,7 @@ with t_services:
         st.markdown(f"- Python {platform.python_version()} · Streamlit {st.__version__}")
 
         st.subheader("Comptes")
-        st.info("🧪 Les comptes sont factices et gardés en mémoire (pas encore de base de "
-                "données) : ils sont remis à zéro au redémarrage du serveur Streamlit. "
-                "Les avis, eux, sont bien stockés dans la base SQLite de l'API.")
+        st.info("Les comptes et les avis sont stockés dans la base SQLite de l'API "
+                "(`data/app.db`, ou `FOODPAIRING_DB`). Les mots de passe y sont salés et hachés. "
+                "Le journal de l'application, lui, est gardé en mémoire et repart de zéro au "
+                "redémarrage de Streamlit.")

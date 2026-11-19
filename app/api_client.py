@@ -20,7 +20,13 @@ CALLS: deque[dict] = deque(maxlen=500)
 
 
 class APIError(RuntimeError):
-    pass
+    """``status`` is the HTTP status (None if the API could not be reached), ``detail`` the
+    API's own message when it sent one (e.g. a French validation message for accounts)."""
+
+    def __init__(self, message: str, status: int | None = None, detail: str | None = None):
+        super().__init__(message)
+        self.status = status
+        self.detail = detail
 
 
 def _record(method: str, path: str, status: int | None, start: float, error: str | None) -> None:
@@ -38,7 +44,12 @@ def _request(method: str, base_url: str, path: str, **kwargs) -> httpx.Response:
         raise APIError(f"API injoignable ({base_url}) : {e}") from e
     if r.status_code >= 400:
         _record(method, path, r.status_code, start, r.text[:200])
-        raise APIError(f"{method} {path} -> HTTP {r.status_code} : {r.text[:300]}")
+        try:
+            detail = r.json().get("detail")
+        except ValueError:
+            detail = None
+        raise APIError(f"{method} {path} -> HTTP {r.status_code} : {r.text[:300]}",
+                       status=r.status_code, detail=detail if isinstance(detail, str) else None)
     _record(method, path, r.status_code, start, None)
     return r
 
@@ -121,3 +132,46 @@ def profile(user_id: str, history_user_id: str | None = None, n: int = 10,
     if history_user_id:
         params["history_user_id"] = history_user_id
     return _request("GET", base_url, f"/profile/{user_id}", params=params).json()
+
+
+
+# ------------------------------------------------------------------ accounts
+def create_user(username: str, display_name: str, email: str, password: str, role: str = "user",
+                actor: str | None = None, base_url: str = DEFAULT_API_URL) -> dict:
+    payload = {"username": username, "display_name": display_name, "email": email,
+               "password": password, "role": role, "actor": actor}
+    return _request("POST", base_url, "/users", json=payload).json()
+
+
+def login(username: str, password: str, base_url: str = DEFAULT_API_URL) -> dict:
+    return _request("POST", base_url, "/login",
+                    json={"username": username, "password": password}).json()
+
+
+def get_user(username: str, base_url: str = DEFAULT_API_URL) -> dict:
+    return _request("GET", base_url, f"/users/{username}").json()
+
+
+def list_users(base_url: str = DEFAULT_API_URL) -> list[dict]:
+    return _request("GET", base_url, "/users").json()
+
+
+def update_user(username: str, changes: dict, base_url: str = DEFAULT_API_URL) -> dict:
+    return _request("PATCH", base_url, f"/users/{username}", json=changes).json()
+
+
+def change_password(username: str, current: str, new: str,
+                    base_url: str = DEFAULT_API_URL) -> None:
+    _request("POST", base_url, f"/users/{username}/password",
+             json={"current": current, "new": new})
+
+
+def admin_action(action: str, actor: str, username: str, base_url: str = DEFAULT_API_URL,
+                 **fields) -> dict:
+    """action: role (role=...), active (active=...) or reset_password."""
+    return _request("POST", base_url, f"/admin/users/{username}/{action}",
+                    json={"actor": actor, **fields}).json()
+
+
+def admin_delete_user(actor: str, username: str, base_url: str = DEFAULT_API_URL) -> None:
+    _request("DELETE", base_url, f"/admin/users/{username}", params={"actor": actor})

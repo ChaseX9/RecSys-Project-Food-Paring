@@ -199,5 +199,5 @@ with t_security:
                 st.success("Mot de passe changé ✅")
             except auth.AuthError as e:
                 st.error(str(e))
-    st.caption("🧪 Pour l'instant les comptes sont gardés en mémoire (pas encore de base de "
-               "données) : ils sont remis à zéro au redémarrage du serveur.")
+    st.caption("🔒 Ton mot de passe n'est jamais stocké en clair : seule une empreinte salée "
+               "est gardée.")

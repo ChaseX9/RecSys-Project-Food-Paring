@@ -35,7 +35,10 @@ def save_fridge() -> None:
     items = list(st.session_state.fridge_sel)
     u = auth.current_user()
     if u:
-        auth.update_profile(u.username, fridge=items)
+        try:
+            auth.update_profile(u.username, fridge=items)
+        except auth.AuthError as e:
+            st.toast(f"Frigo non enregistré : {e}", icon="❌")
     else:
         st.session_state.guest_fridge = items
     st.session_state.pop("fridge_results", None)  # results no longer match the fridge

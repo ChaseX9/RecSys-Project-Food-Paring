@@ -2,11 +2,66 @@ import os
 from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from . import db
+from . import db, users
 from .recommender import ModelRecommender, mock_recommend, model_available
+
+
+# ------------------------------------------------------------------ users
+class UserOut(BaseModel):
+    username: str
+    display_name: str
+    email: str
+    role: Literal["user", "admin"]
+    active: bool
+    diet: str | None = None
+    allergies: list[str] = []
+    disliked: list[str] = []
+    fridge: list[str] = []
+    top_k: int = 10
+    food_com_id: str | None = None
+    created_at: str
+    last_login: str | None = None
+
+
+class UserCreate(BaseModel):
+    username: str = Field(max_length=30)
+    display_name: str = Field(max_length=100)
+    email: str = Field(max_length=200)
+    password: str = Field(max_length=200)
+    role: Literal["user", "admin"] = "user"
+    actor: str | None = None     # the admin creating the account (needed for role "admin")
+
+
+class LoginIn(BaseModel):
+    username: str = Field(max_length=100)
+    password: str = Field(max_length=200)
+
+
+class UserUpdate(BaseModel):
+    """Fields a user can change on their own account (only the ones sent are updated)."""
+    display_name: str | None = Field(default=None, max_length=100)
+    email: str | None = Field(default=None, max_length=200)
+    diet: Literal["vegetarian", "vegan", "pescatarian"] | None = None
+    allergies: list[str] | None = Field(default=None, max_length=50)
+    disliked: list[str] | None = Field(default=None, max_length=500)
+    fridge: list[str] | None = Field(default=None, max_length=500)
+    top_k: int | None = Field(default=None, ge=1, le=50)
+    food_com_id: str | None = Field(default=None, max_length=20)
+
+
+class PasswordChange(BaseModel):
+    current: str = Field(max_length=200)
+    new: str = Field(max_length=200)
+
+
+class AdminAction(BaseModel):
+    actor: str                   # the admin doing it
+    role: Literal["user", "admin"] | None = None
+    active: bool | None = None
 
 
 class InteractionIn(BaseModel):
@@ -72,6 +127,7 @@ def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         db.init_db(path)
+        users.init_db(path, seed_demo=os.environ.get("FOODPAIRING_SEED_DEMO", "1") != "0")
         if recommender == "auto":
             if model_available() and os.environ.get("FOODPAIRING_MOCK") != "1":
                 state["model"] = ModelRecommender()
@@ -132,6 +188,55 @@ def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
     def get_feedback(user_id: str):
         """What the feedback loop currently applies for this user (outside any query)."""
         return AppliedFeedback(**db.feedback_for_user(path, user_id))
+
+    # ------------------------------------------------------------- accounts
+    # No authentication on the API itself yet: it trusts its caller (see api/users.py).
+    @app.exception_handler(users.UserError)
+    def user_error(request: Request, exc: users.UserError):
+        return JSONResponse(status_code=exc.status, content={"detail": exc.message})
+
+    @app.post("/users", response_model=UserOut, status_code=201)
+    def create_user(body: UserCreate):
+        return users.create_user(path, body.username, body.display_name, body.email,
+                                 body.password, body.role, body.actor)
+
+    @app.post("/login", response_model=UserOut)
+    def login(body: LoginIn):
+        return users.authenticate(path, body.username, body.password)
+
+    @app.get("/users", response_model=list[UserOut])
+    def list_users():
+        return users.list_users(path)
+
+    @app.get("/users/{username}", response_model=UserOut)
+    def get_user(username: str):
+        return users.get_user(path, username)
+
+    @app.patch("/users/{username}", response_model=UserOut)
+    def update_user(username: str, body: UserUpdate):
+        return users.update_user(path, username, body.model_dump(exclude_unset=True))
+
+    @app.post("/users/{username}/password", status_code=204)
+    def change_password(username: str, body: PasswordChange):
+        users.change_password(path, username, body.current, body.new)
+        return Response(status_code=204)
+
+    @app.post("/admin/users/{username}/role", response_model=UserOut)
+    def admin_set_role(username: str, body: AdminAction):
+        return users.set_role(path, body.actor, username, body.role or "user")
+
+    @app.post("/admin/users/{username}/active", response_model=UserOut)
+    def admin_set_active(username: str, body: AdminAction):
+        return users.set_active(path, body.actor, username, bool(body.active))
+
+    @app.post("/admin/users/{username}/reset_password")
+    def admin_reset_password(username: str, body: AdminAction):
+        return {"temporary_password": users.reset_password(path, body.actor, username)}
+
+    @app.delete("/admin/users/{username}", status_code=204)
+    def admin_delete_user(username: str, actor: str = Query(max_length=100)):
+        users.delete_user(path, actor, username)
+        return Response(status_code=204)
 
     return app
 
