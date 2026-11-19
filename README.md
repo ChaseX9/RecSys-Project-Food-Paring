@@ -203,7 +203,15 @@ then without qualifiers like "fresh"/"ground", then the head noun) and stores 96
 `app/images/ingredients/` with the mapping in `app/ingredient_images.csv` (~93 % of ingredient
 uses covered). Ingredients without a photo show a family emoji instead.
 
-Recipe pictures: `python scripts/fetch_recipe_images.py` matches recipe titles to TheMealDB
+Recipe photos: each recipe shows **its own photo from Food.com** when it has one (54 % of the
+recipes, 99.6 % of the 3,000 most rated). `python scripts/link_foodcom_photos.py` reads the Kaggle
+dataset [Food.com - Recipes and Reviews](https://www.kaggle.com/datasets/irkaal/foodcom-recipes-and-reviews)
+(`recipes.parquet` in `data/raw/`, same recipe ids as ours) and writes `app/recipe_photos.parquet`
+(recipe id → CDN path, 3 MB). The photos belong to the Food.com users who posted them, so they
+are **not** stored in the repo: the browser loads a small version from Food.com's CDN. Underneath,
+and shown when there is no photo or no internet, the app keeps a local picture:
+
+Local pictures: `python scripts/fetch_recipe_images.py` matches recipe titles to TheMealDB
 dish photos, strictly (same words, or every word of a 2+ word dish in the title *and* the
 title's head noun in the dish, so "Pumpkin Pie Dip" gets no pumpkin pie photo). About 7.2k
 recipes get a 160 px photo of a similar dish (`app/images/recipes/`, mapping in

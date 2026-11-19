@@ -201,3 +201,17 @@ def test_recipe_photo_matching_is_strict():
     got = {r.recipe_id: (r.meal, r.match) for r in match_recipes(recipes_df, meals).itertuples()}
     assert got == {1: ("Dutch Apple Pie", "exact"), 2: ("Lasagne", "exact"),
                    5: ("Apple Pie", "dish")}
+
+
+def test_link_foodcom_photos_keeps_our_recipes_with_a_photo():
+    from scripts.link_foodcom_photos import first_photo_path, link
+
+    base = "https://img.sndimg.com/food/image/upload/w_555,h_416,c_fit/v1/img/recipes/"
+    kaggle = pd.DataFrame({"RecipeId": [1.0, 2.0, 3.0, 9.0, None],
+                           "Images": [np.array([base + "1/a.jpg", base + "1/b.jpg"]),
+                                      np.array([], dtype=object), None,
+                                      np.array([base + "9/z.jpg"]), np.array([base + "x.jpg"])]})
+    ours = pd.DataFrame({"recipe_id": [1, 2, 3, 4]})
+    out = link(kaggle, ours)
+    assert out.to_dict("records") == [{"recipe_id": 1, "path": "1/a.jpg"}]  # first photo only
+    assert first_photo_path(None) is None and first_photo_path(["http://other/x.jpg"]) is None

@@ -226,9 +226,13 @@ def ingredient_img(name: str, size: int = 40) -> str:
 
 
 # --------------------------------------------------------- recipe photos
-# A real dish photo from TheMealDB when the title matches one (scripts/fetch_recipe_images.py,
-# ~7k recipes), else a collage of the recipe's ingredient photos.
-# Pantry staples make a poor picture of a dish: they come last in the collage.
+# 1. The recipe's own photo on Food.com (scripts/link_foodcom_photos.py, ~123k recipes), loaded
+#    from Food.com's CDN by the browser (the photos are not stored in the repo).
+# 2. Below it, shown if 1 is missing or cannot load (offline): a photo of a similar dish from
+#    TheMealDB (scripts/fetch_recipe_images.py, ~7k recipes), else a collage of the recipe's
+#    ingredient photos. Pantry staples make a poor picture of a dish: they come last.
+PHOTO_URL = ("https://img.sndimg.com/food/image/upload/w_{px},h_{px},c_fill,q_80/v1/img/recipes/"
+             "{path}")
 _STAPLES = {"salt", "pepper", "black pepper", "water", "sugar", "flour", "all-purpose flour",
             "baking soda", "baking powder", "oil", "vegetable oil", "olive oil", "butter",
             "egg", "milk", "kosher salt", "table salt", "ground black pepper", "cooking spray",
@@ -244,9 +248,35 @@ def _recipe_photo_paths() -> dict[int, str]:
     return dict(zip(df["recipe_id"].astype(int), df["image"]))
 
 
+@st.cache_data
+def _foodcom_photo_paths() -> dict[int, str]:
+    path = APP_DIR / "recipe_photos.parquet"
+    if not path.exists():
+        return {}
+    df = pd.read_parquet(path)
+    return dict(zip(df["recipe_id"].astype(int), df["path"]))
+
+
 def recipe_img(recipe_id: int, ingredients: list[str], size: int = 96) -> str:
-    """HTML for a recipe thumbnail: dish photo, or a 2x2 collage of its ingredient photos
-    (main ingredients first), or a family emoji when none of them has a photo."""
+    """HTML for a recipe thumbnail: the recipe's Food.com photo on top of the local picture
+    (TheMealDB photo or ingredient collage), which shows when the photo is missing or fails."""
+    local = _local_recipe_img(recipe_id, ingredients, size)
+    path = _foodcom_photo_paths().get(int(recipe_id))
+    if not path:
+        return local
+    from html import escape
+
+    url = escape(PHOTO_URL.format(px=min(2 * size, 320), path=path.replace(" ", "%20")), quote=True)
+    return (f"<span style='position:relative;display:inline-block;width:{size}px;"
+            f"height:{size}px;vertical-align:middle;flex:none'>{local}"
+            f"<img src='{url}' alt='' loading='lazy' title='Photo de la recette (Food.com)' "
+            f"style='position:absolute;inset:0;width:{size}px;height:{size}px;object-fit:cover;"
+            f"border-radius:10px'></span>")
+
+
+def _local_recipe_img(recipe_id: int, ingredients: list[str], size: int = 96) -> str:
+    """Picture available offline: TheMealDB dish photo, or a 2x2 collage of the recipe's
+    ingredient photos (main ingredients first), or a family emoji when none has a photo."""
     box = (f"width:{size}px;height:{size}px;border-radius:10px;overflow:hidden;flex:none;"
            f"background:rgba(128,128,128,.15);display:inline-block;vertical-align:middle")
     rel = _recipe_photo_paths().get(int(recipe_id))

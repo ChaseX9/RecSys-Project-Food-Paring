@@ -309,9 +309,9 @@ def test_ingredient_images_photo_or_emoji():
 def test_recipe_images_photo_collage_or_emoji():
     import re
 
-    from app.common import _image_uri, _image_paths, recipe_img
+    from app.common import _image_uri, _image_paths, _local_recipe_img, recipe_img
 
-    photo = recipe_img(54, ["carrot", "flour"])            # "Carrot Cake": TheMealDB photo
+    photo = _local_recipe_img(54, ["carrot", "flour"])     # "Carrot Cake": TheMealDB photo
     assert photo.count("<img") == 1 and "object-fit:cover" in photo
     collage = recipe_img(-1, ["salt", "salmon", "dill", "lemon", "butter", "garlic"])
     srcs = re.findall(r"src='([^']+)'", collage)
@@ -321,6 +321,18 @@ def test_recipe_images_photo_collage_or_emoji():
     assert not set(staples) & set(srcs)                   # 4 main ingredients have a photo
     assert "🐟" in recipe_img(-1, ["zzz fish"])            # no photo at all -> emoji
     assert recipe_img(-1, []).count("<img") == 0
+
+
+def test_recipe_food_com_photo_on_top_of_the_local_picture():
+    from app.common import _foodcom_photo_paths, _local_recipe_img, recipe_img
+
+    if 38 not in _foodcom_photo_paths():
+        pytest.skip("app/recipe_photos.parquet not generated")
+    html = recipe_img(38, ["blueberry", "sugar"], size=96)  # "Low-Fat Berry Blue Frozen Dessert"
+    assert "https://img.sndimg.com/food/image/upload/w_192,h_192,c_fill" in html  # 2x for retina
+    assert "/v1/img/recipes/38/" in html and "loading='lazy'" in html
+    assert html.startswith("<span style='position:relative")
+    assert _local_recipe_img(38, ["blueberry", "sugar"], 96) in html   # fallback underneath
 
 
 def test_accounts_survive_an_app_restart(tmp_path, monkeypatch):
