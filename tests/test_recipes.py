@@ -177,3 +177,27 @@ def test_profile_from_replayed_ratings_equals_the_precomputed_one():
         a = rp.net.getrow(row).toarray().ravel()
         b = one.net.getrow(0).toarray().ravel()
         assert np.abs(a - b).max() < 1e-9 and one.confidence[0] == pytest.approx(rp.confidence[row])
+
+
+# ------------------------------------------------- recipe photos (TheMealDB matching)
+def test_recipe_photo_matching_is_strict():
+    from scripts.fetch_recipe_images import head_noun, match_recipes, words
+
+    assert words("Mom's BEST Beef Stroganov (Stroganoff)") == ["beef", "stroganoff", "stroganoff"]
+    assert head_noun("Peanut Butter Cup Cookies (Tarts)") == words("Cookie")[0]  # same stem
+    assert words("Berries") == words("berry") and words("Pies") == words("pie")
+    meals = [{"id": "1", "name": "Apple Pie", "thumb": "u1"},
+             {"id": "2", "name": "Dutch Apple Pie", "thumb": "u2"},
+             {"id": "3", "name": "Lasagne", "thumb": "u3"},
+             {"id": "4", "name": "Pumpkin Pie", "thumb": "u4"}]
+    recipes_df = pd.DataFrame({"recipe_id": [1, 2, 3, 4, 5, 6], "name": [
+        "Easy Dutch Apple Pie",          # most specific dish wins
+        "Crock Pot Lasagna",             # exact after normalization (filler words, spelling)
+        "Pumpkin Pie Dip",               # head noun "dip": not a pie
+        "Apple Pie Muffins",             # head noun "muffin": not a pie
+        "Kentucky Apple Festival Apple Pie",
+        "Apple",                         # one word only: no "dish" match
+    ]})
+    got = {r.recipe_id: (r.meal, r.match) for r in match_recipes(recipes_df, meals).itertuples()}
+    assert got == {1: ("Dutch Apple Pie", "exact"), 2: ("Lasagne", "exact"),
+                   5: ("Apple Pie", "dish")}

@@ -203,3 +203,10 @@ then without qualifiers like "fresh"/"ground", then the head noun) and stores 96
 `app/images/ingredients/` with the mapping in `app/ingredient_images.csv` (~93 % of ingredient
 uses covered). Ingredients without a photo show a family emoji instead.
 
+Recipe pictures: `python scripts/fetch_recipe_images.py` matches recipe titles to TheMealDB
+dish photos, strictly (same words, or every word of a 2+ word dish in the title *and* the
+title's head noun in the dish, so "Pumpkin Pie Dip" gets no pumpkin pie photo). About 7.2k
+recipes get a 160 px photo of a similar dish (`app/images/recipes/`, mapping in
+`app/recipe_images.csv`). Every other recipe shows a 2x2 collage of its ingredient photos,
+main ingredients first and pantry staples (salt, flour, oil, ...) last.
+

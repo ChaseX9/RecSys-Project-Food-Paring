@@ -225,6 +225,49 @@ def ingredient_img(name: str, size: int = 40) -> str:
             f"{ingredient_emoji(name)}</span>")
 
 
+# --------------------------------------------------------- recipe photos
+# A real dish photo from TheMealDB when the title matches one (scripts/fetch_recipe_images.py,
+# ~7k recipes), else a collage of the recipe's ingredient photos.
+# Pantry staples make a poor picture of a dish: they come last in the collage.
+_STAPLES = {"salt", "pepper", "black pepper", "water", "sugar", "flour", "all-purpose flour",
+            "baking soda", "baking powder", "oil", "vegetable oil", "olive oil", "butter",
+            "egg", "milk", "kosher salt", "table salt", "ground black pepper", "cooking spray",
+            "vanilla", "vanilla extract", "cornstarch", "ice"}
+
+
+@st.cache_data
+def _recipe_photo_paths() -> dict[int, str]:
+    path = APP_DIR / "recipe_images.csv"
+    if not path.exists():
+        return {}
+    df = pd.read_csv(path)
+    return dict(zip(df["recipe_id"].astype(int), df["image"]))
+
+
+def recipe_img(recipe_id: int, ingredients: list[str], size: int = 96) -> str:
+    """HTML for a recipe thumbnail: dish photo, or a 2x2 collage of its ingredient photos
+    (main ingredients first), or a family emoji when none of them has a photo."""
+    box = (f"width:{size}px;height:{size}px;border-radius:10px;overflow:hidden;flex:none;"
+           f"background:rgba(128,128,128,.15);display:inline-block;vertical-align:middle")
+    rel = _recipe_photo_paths().get(int(recipe_id))
+    uri = _image_uri(rel) if rel else None
+    if uri:
+        return (f"<img src='{uri}' alt='' title='Photo d&#39;un plat similaire (TheMealDB)' "
+                f"style='{box};object-fit:cover'>")
+    ordered = sorted(ingredients, key=lambda n: n in _STAPLES)  # stable: keeps recipe order
+    uris = [u for u in (_image_uri(p) for p in (_image_paths().get(n) for n in ordered) if p) if u]
+    uris = list(dict.fromkeys(uris))[:4]
+    if not uris:
+        emoji = ingredient_emoji(" ".join(ingredients)) if ingredients else "🍽️"
+        return (f"<span style='{box};text-align:center;line-height:{size}px;"
+                f"font-size:{size * 0.5:.0f}px'>{emoji}</span>")
+    cell = size // 2 if len(uris) > 1 else size
+    imgs = "".join(f"<img src='{u}' alt='' style='width:{cell}px;height:{cell}px;"
+                   f"object-fit:contain;padding:3px;box-sizing:border-box'>" for u in uris)
+    return (f"<span style='{box};display:inline-flex;flex-wrap:wrap;align-content:center;"
+            f"justify-content:center' title='Les ingrédients de la recette'>{imgs}</span>")
+
+
 # ---------------------------------------------------------- explanations
 _EXPLANATIONS = [
     (re.compile(r"often paired together in recipes"), "souvent cuisinés ensemble dans les recettes"),

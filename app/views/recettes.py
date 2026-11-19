@@ -14,7 +14,7 @@ import random
 import streamlit as st
 
 from app import api_client, auth
-from app.common import API_DOWN_MSG, api_url, fr, ingredient_img
+from app.common import API_DOWN_MSG, api_url, fr, ingredient_img, recipe_img
 
 GOAL = 10  # ratings after which the profile is considered "started"
 
@@ -76,21 +76,24 @@ def finish_onboarding() -> None:
 def recipe_card(r: dict, section: str, rating: int | None, compact: bool = False) -> None:
     """Name, ingredients (in French, with photos), Food.com stats and the 5 stars."""
     rid = r["recipe_id"]
+    ings = r.get("ingredients") or []
     with st.container(border=True):
-        st.markdown(f"**{r['name']}**")
-        ings = r.get("ingredients") or []
-        shown = ings[:6] if compact else ings[:10]
-        st.markdown(" ".join(f"<span style='white-space:nowrap;margin-right:.5rem'>"
-                             f"{ingredient_img(i, 22)}{fr(i)}</span>" for i in shown)
-                    + (f" <span style='opacity:.6'>+{len(ings) - len(shown)}</span>"
-                       if len(ings) > len(shown) else ""), unsafe_allow_html=True)
-        if r.get("n_ratings"):
-            mean = f"{r['mean_rating']:.1f} ★ · " if r.get("mean_rating") else ""
-            st.caption(f"Sur Food.com : {mean}{r['n_ratings']} avis")
-        # the rating is part of the key: the widget is rebuilt when the rating changes elsewhere
-        key = f"stars|{section}|{rid}|{rating}"
-        st.feedback("stars", key=key, default=None if rating is None else rating - 1,
-                    on_change=on_stars, args=(key, rid, r["name"]))
+        pic, body = st.columns([1, 3] if compact else [1, 4], vertical_alignment="center")
+        pic.markdown(recipe_img(rid, ings, 96 if compact else 120), unsafe_allow_html=True)
+        with body:
+            st.markdown(f"**{r['name']}**")
+            shown = ings[:6] if compact else ings[:10]
+            st.markdown(" ".join(f"<span style='white-space:nowrap;margin-right:.5rem'>"
+                                 f"{ingredient_img(i, 22)}{fr(i)}</span>" for i in shown)
+                        + (f" <span style='opacity:.6'>+{len(ings) - len(shown)}</span>"
+                           if len(ings) > len(shown) else ""), unsafe_allow_html=True)
+            if r.get("n_ratings"):
+                mean = f"{r['mean_rating']:.1f} ★ · " if r.get("mean_rating") else ""
+                st.caption(f"Sur Food.com : {mean}{r['n_ratings']} avis")
+            # the rating is in the key: the widget is rebuilt when the rating changes elsewhere
+            key = f"stars|{section}|{rid}|{rating}"
+            st.feedback("stars", key=key, default=None if rating is None else rating - 1,
+                        on_change=on_stars, args=(key, rid, r["name"]))
 
 
 # ---------------------------------------------------------------- data
@@ -186,7 +189,8 @@ st.subheader(f"📋 Mes notes ({n})")
 if not mine:
     st.caption("Tu n'as encore noté aucune recette.")
 for r in mine:
-    c1, c2, c3 = st.columns([5, 2, 1], vertical_alignment="center")
+    c0, c1, c2, c3 = st.columns([1, 5, 2, 1], vertical_alignment="center")
+    c0.markdown(recipe_img(r["recipe_id"], r.get("ingredients") or [], 56), unsafe_allow_html=True)
     c1.markdown(f"**{r['name']}**  \n<span style='opacity:.7;font-size:.85em'>"
                 + ", ".join(fr(i) for i in (r.get("ingredients") or [])[:6]) + "</span>",
                 unsafe_allow_html=True)
