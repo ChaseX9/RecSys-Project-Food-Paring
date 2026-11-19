@@ -26,7 +26,7 @@ ROLES = {"user": "Utilisateur", "admin": "Administrateur"}
 GUEST = "anonymous"  # generic id for API checks; each guest session gets its own guest-xxxx id
 GUEST_PREFIX = "guest-"
 EDITABLE = {"display_name", "email", "diet", "allergies", "disliked", "top_k", "food_com_id",
-            "fridge"}
+            "fridge", "onboarding_done"}
 API_DOWN = "Le serveur ne répond pas : réessaie dans un instant (ou lance `uvicorn api.main:app`)."
 
 
@@ -47,6 +47,7 @@ class User:
     fridge: list[str] = field(default_factory=list)     # ingredients the user has at home
     top_k: int = 10
     food_com_id: str | None = None          # linked Food.com profile, used for personalization
+    onboarding_done: bool = False           # recipe-rating onboarding done or skipped
     created_at: str = ""
     last_login: str | None = None
 

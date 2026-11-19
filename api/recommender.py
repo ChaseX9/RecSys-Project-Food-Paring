@@ -135,15 +135,16 @@ class ModelRecommender:
 
     def recommend(self, ingredients, top_k=10, user_id=None, allergies=None, diet=None,
                   liked=None, disliked=None, candidates=None, exclude=None,
-                  history_user_id=None) -> list[dict]:
+                  history_user_id=None, recipe_ratings=None) -> list[dict]:
         """``user_id`` is the account (feedback); ``history_user_id`` whose rating history
-        personalizes the ranking (defaults to ``user_id``). ``exclude``: never recommended."""
+        personalizes the ranking (defaults to ``user_id``). ``exclude``: never recommended.
+        ``recipe_ratings`` [(recipe_id, rating)]: recipes the account rated in the app."""
         from src.explain.reasons import attach_explanations
 
         recs = self.ranker.recommend(ingredients, user_id=history_user_id or user_id,
                                      allergies=allergies, diet=diet, exclude=exclude,
                                      top_k=top_k, liked=liked, disliked=disliked,
-                                     candidates=candidates)
+                                     candidates=candidates, recipe_ratings=recipe_ratings)
         recs = attach_explanations(recs, ingredients, self.npmi, self.chemical,
                                    self.compounds, self.ing_comp)
         out = []
@@ -155,9 +156,17 @@ class ModelRecommender:
                        | {"explanation": expl, "feedback": r.get("feedback")})
         return out
 
-    def profile(self, user_id, liked=None, disliked=None, n: int = 10) -> dict:
+    def profile(self, user_id, liked=None, disliked=None, n: int = 10, recipe_ratings=None) -> dict:
         """The user's preference profile (rating history updated with feedback)."""
-        return self.ranker.profile_summary(user_id, liked, disliked, n)
+        return self.ranker.profile_summary(user_id, liked, disliked, n, recipe_ratings)
+
+    def ban_for(self, diet=None, allergies=None):
+        """What a diet / allergies exclude from the recipe catalog (same rules as the
+        recommendations): vocabulary ids, plus a regex for recipe names."""
+        from .recipes import Ban
+
+        return Ban(set(self.ranker._diet_ban(diet)) | set(self.ranker._allergy_ban(allergies)),
+                   self.ranker.ban_pattern(diet, allergies))
 
 
 def model_available(embeddings_path: str | Path = EMBEDDINGS_PATH) -> bool:

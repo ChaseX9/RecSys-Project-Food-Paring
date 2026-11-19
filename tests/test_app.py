@@ -331,3 +331,75 @@ def test_sign_up_page_creates_account_in_api(api):
     _button(at, "Créer mon compte").click().run()
     assert not at.exception and at.session_state.auth_user == "lea.m"
     assert _user(api, "lea.m")["display_name"] == "Léa M"
+    assert at.title[0].value.startswith("⭐")  # first login: sent to the recipe ratings
+
+
+# ------------------------------------------------------------- recipe ratings
+def _new_account(api, username="lea.m") -> AppTest:
+    api.post("/users", json={"username": username, "display_name": "Léa M",
+                             "email": f"{username}@exemple.fr", "password": "motdepasse"})
+    return _login(username, "motdepasse")
+
+
+def _stars(at, section: str):
+    return [f for f in at.feedback if f.key.startswith(f"stars|{section}|")]
+
+
+def test_first_login_onboarding_rate_then_finish(api):
+    at = _new_account(api)
+    assert at.title[0].value.startswith("⭐")
+    starters = _stars(at, "onb")
+    assert len(starters) == 10
+    starters[0].set_value(4).run()                      # 5 stars
+    starters = _stars(at, "onb")
+    starters[1].set_value(0).run()                      # 1 star
+    rows = api.get("/recipe_ratings/lea.m").json()
+    assert sorted(r["user_rating"] for r in rows) == [1, 5]
+    assert len(_stars(at, "mine")) == 2
+    _button(at, "C'est bon pour l'instant").click().run()
+    assert _user(api, "lea.m")["onboarding_done"] is True
+    assert api.get("/profile/lea.m").json()["n_recipe_ratings"] == 2
+
+    at = _login("lea.m", "motdepasse")                  # next login: no redirect any more
+    assert at.title[0].value.startswith("🍽️")
+
+
+def test_skip_onboarding(api):
+    at = _new_account(api)
+    _button(at, "Passer").click().run()
+    assert _user(api, "lea.m")["onboarding_done"] is True and \
+        api.get("/recipe_ratings/lea.m").json() == []
+
+
+def test_recipe_to_rate_changes_and_can_be_skipped(api):
+    at = _new_account(api)
+    first = at.session_state.rate_next["recipe_id"]
+    _button(at, "🤷").click().run()
+    second = at.session_state.rate_next["recipe_id"]
+    assert second != first
+    _stars(at, "next")[0].set_value(3).run()
+    rows = api.get("/recipe_ratings/lea.m").json()
+    assert {r["recipe_id"]: r["user_rating"] for r in rows} == {second: 4}
+    assert at.session_state.rate_next["recipe_id"] != second   # a new one once rated
+
+
+def test_search_rate_and_remove(api):
+    at = _new_account(api)
+    at.text_input(key="rate_query").input("chocolate chip cookies").run()
+    found = _stars(at, "search")
+    assert found
+    found[0].set_value(4).run()
+    rows = api.get("/recipe_ratings/lea.m").json()
+    assert len(rows) == 1 and "cookie" in rows[0]["name"].lower()
+    _button(at, "🗑️").click().run()
+    assert api.get("/recipe_ratings/lea.m").json() == []
+
+
+def test_rating_page_respects_diet(api):
+    at = _login("camille")                              # vegetarian
+    at = _goto(at, "recettes.py")
+    names = " ".join(at.session_state.rate_next["name"].lower().split())
+    for r in api.get("/recipes/onboarding", params={"user_id": "camille",
+                                                    "diet": "vegetarian"}).json():
+        names += " " + r["name"].lower()
+    assert not any(w in names for w in ("chicken", "pork", "beef", "ribs", "salmon", "shrimp"))

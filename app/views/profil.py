@@ -91,15 +91,23 @@ def feedback_list(names: list[str], button: str, feedback: str, message: str, ke
 
 
 with t_learned:
-    st.markdown("Le modèle ajuste ses suggestions selon **tes avis** (👍 👎 ⚠️ sur les "
-                "suggestions)" + (" et **les recettes notées par ton profil Food.com**"
-                                  if user.food_com_id else "") + ". Voici ce qu'il retient.")
+    st.markdown("Le modèle ajuste ses suggestions selon **les recettes que tu notes**, **tes "
+                "avis** (👍 👎 ⚠️ sur les suggestions)" + (" et **les recettes notées par ton "
+                                                           "profil Food.com**"
+                                                           if user.food_com_id else "")
+                + ". Voici ce qu'il retient.")
     try:
         prof = api_client.profile(auth.log_user_id(user), auth.history_user_id(user), n=12,
                                   base_url=api_url())
     except api_client.APIError:
         st.error(API_DOWN_MSG)
         prof = None
+    n_rated = (prof or {}).get("n_recipe_ratings", 0)
+    note, link = st.columns([3, 2], vertical_alignment="center")
+    note.markdown(f"⭐ **{n_rated} recette(s) notée(s)**"
+                  + ("" if n_rated >= 10 else " : note-en au moins 10 pour des suggestions "
+                                              "vraiment personnalisées."))
+    link.page_link("views/recettes.py", label="Noter des recettes", icon="⭐")
     if prof:
         fb = prof.get("feedback") or {}
         if prof.get("mock"):
@@ -151,9 +159,10 @@ with t_learned:
 # ------------------------------------------------------------ personalization
 with t_perso:
     st.markdown(
-        "Le modèle apprend les goûts des utilisateurs à partir de leurs **recettes notées sur "
-        "Food.com**. En reliant ton compte à un profil Food.com, les suggestions sont réordonnées "
-        "selon ces goûts.")
+        "Le modèle apprend les goûts des utilisateurs à partir de **recettes notées**. Le plus "
+        "simple : **note des recettes** directement ici. Tu peux aussi relier ton compte à un "
+        "profil Food.com existant : ses notes s'ajoutent aux tiennes.")
+    st.page_link("views/recettes.py", label="Noter des recettes", icon="⭐")
     demo = load_demo_users()
     options = ["none"] + demo + ["custom"]
     current = user.food_com_id
