@@ -45,6 +45,12 @@ else:
     visible = ["login", "about"]
 nav = st.navigation([P[k] for k in visible], position="hidden")
 
+# Just signed up: go straight to the profile so allergies and diet are filled in first.
+if user and st.session_state.get("onboarding") and "profil" in visible:
+    st.session_state.onboarding_banner = True
+    st.session_state.pop("onboarding")
+    st.switch_page(P["profil"])
+
 # -------------------------------------------------------------- sidebar top
 uri = logo_data_uri(st.session_state.dark_mode)  # ECE logo, cut out and recoloured per theme
 logo_html = f"<img src='{uri}' style='width:150px;margin-bottom:.8rem'><br>" if uri else ""
