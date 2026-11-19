@@ -110,6 +110,7 @@ Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingre
 - **Cold start:** a new app user (no Food.com history) starts with an empty profile, built from their very first like.
 - The preference stays **multiplicative**: a liked ingredient goes up where it pairs well (coconut milk with chicken), not next to anything.
 - `GET /profile/{user_id}` shows the current profile (ratings history + feedback), `GET /feedback/{user_id}` the raw feedback state. `/recommend` returns `applied_feedback` and, per item, `feedback` ("you liked it", "close to thyme, which you liked").
+- Optional `/recommend` fields: `candidates` (only these ingredients may be returned, e.g. a fridge), `exclude` (never returned, not stored as feedback) and `history_user_id` (whose rating history personalizes, e.g. a Food.com profile linked to an app account; feedback is still read from `user_id`). `/profile` takes `history_user_id` too.
 
 `/recommend` serves the trained model when `artifacts/ingredient_embeddings.npy` exists (`"mock": false`, check `GET /health`), and falls back to the mock otherwise or with `FOODPAIRING_MOCK=1`.
 
@@ -165,8 +166,15 @@ The UI (in French, dark/light toggle) only talks to the API (`FOODPAIRING_API_UR
 `http://127.0.0.1:8000`). Pages: **Trouver des accords** (query + recommendations + feedback, with
 the user's diet/allergies applied), **Mon frigo** (pairings using only what the user has
 at home, via the `candidates` field of `/recommend`), **Mon historique**, **Mon profil**
-(diet, allergies, disliked ingredients, Food.com profile link, e-mail, password),
-**Administration** (admins only: overview, user management, logs, API checks), **À propos**.
+(diet, allergies, ingredients never to suggest, what the model learned from the user's feedback,
+Food.com profile link, e-mail, password), **Administration** (admins only: overview, user
+management, logs, API checks), **À propos**.
+
+Feedback buttons map to the API feedback loop: 👍 `like`, 👎 `dislike`, 🚫 "Pas avec ça"
+`not_for_me`, ⚠️ `allergic` (with confirmation), 🍳 `cooked`. The app does no filtering of its
+own: it sends `user_id` = the account (one random `guest-xxxx` id per guest session), the linked
+Food.com profile as `history_user_id` and the profile's "never suggest" list as `exclude`. Feedback
+can be changed from **Mon profil** (e.g. ✅ `not_allergic` after a mistake).
 
 Accounts are **mock** for now (kept in memory in `app/auth.py`, reset when Streamlit restarts)
 until the user database exists. Demo logins: `admin` / `admin1234` (admin), `demo` / `demo1234`,

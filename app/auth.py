@@ -21,7 +21,8 @@ import streamlit as st
 from app import api_client
 
 ROLES = {"user": "Utilisateur", "admin": "Administrateur"}
-GUEST = "anonymous"  # user_id sent to the API for guests
+GUEST = "anonymous"  # generic id for API checks; each guest session gets its own guest-xxxx id
+GUEST_PREFIX = "guest-"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 USERNAME_RE = re.compile(r"^[a-z0-9_.-]{3,30}$")
 MIN_PASSWORD = 8
@@ -167,16 +168,21 @@ def logout() -> None:
     st.session_state.update(keep)
 
 
-def api_user_id(u: User | None) -> str:
-    """Id sent to /recommend: the linked Food.com profile if any (personalization), else the account."""
-    if u is None:
-        return GUEST
-    return u.food_com_id or u.username
-
-
 def log_user_id(u: User | None) -> str:
-    """Id sent to /log_interaction: always the account, so each user's history stays theirs."""
-    return u.username if u else GUEST
+    """Id sent to the API as ``user_id`` (feedback, history, /recommend): always the account, so
+    each user's feedback stays theirs. Guests get one id per browser session, so one guest's
+    dislikes are never applied to another guest."""
+    if u is not None:
+        return u.username
+    if "guest_id" not in st.session_state:
+        st.session_state.guest_id = GUEST_PREFIX + secrets.token_hex(4)
+    return st.session_state.guest_id
+
+
+def history_user_id(u: User | None) -> str | None:
+    """Id sent as ``history_user_id``: the linked Food.com profile whose ratings personalize
+    the ranking, or None (the account itself, which has no rating history)."""
+    return u.food_com_id if u else None
 
 
 # ---------------------------------------------------------------- accounts

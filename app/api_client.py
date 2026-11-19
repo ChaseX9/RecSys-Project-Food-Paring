@@ -65,14 +65,22 @@ def recommend(
     diet: str | None = None,
     base_url: str = DEFAULT_API_URL,
     candidates: list[str] | None = None,
+    exclude: list[str] | None = None,
+    history_user_id: str | None = None,
 ) -> tuple[dict, float]:
     """POST /recommend. Returns (response body, latency in seconds).
 
-    `candidates` restricts the suggestions to these ingredients (e.g. the user's fridge)."""
+    The API applies `user_id`'s past feedback by itself (feedback loop).
+    `candidates` restricts the suggestions to these ingredients (e.g. the user's fridge),
+    `exclude` removes some, `history_user_id` is the Food.com profile used for personalization."""
     payload = {"user_id": user_id, "ingredients": ingredients, "top_k": top_k,
                "allergies": allergies or None, "diet": diet}
     if candidates is not None:
         payload["candidates"] = candidates
+    if exclude:
+        payload["exclude"] = exclude
+    if history_user_id:
+        payload["history_user_id"] = history_user_id
     start = time.perf_counter()
     body = _request("POST", base_url, "/recommend", json=payload).json()
     return body, time.perf_counter() - start
@@ -99,3 +107,17 @@ def interactions(user_id: str | None = None, limit: int = 500,
     if user_id:
         params["user_id"] = user_id
     return _request("GET", base_url, "/interactions", params=params).json()
+
+
+def feedback(user_id: str, base_url: str = DEFAULT_API_URL) -> dict:
+    """GET /feedback/{user_id}: what the feedback loop applies ({liked, disliked, allergic})."""
+    return _request("GET", base_url, f"/feedback/{user_id}").json()
+
+
+def profile(user_id: str, history_user_id: str | None = None, n: int = 10,
+            base_url: str = DEFAULT_API_URL) -> dict:
+    """GET /profile/{user_id}: taste profile as the model sees it (ratings + feedback)."""
+    params = {"n": n}
+    if history_user_id:
+        params["history_user_id"] = history_user_id
+    return _request("GET", base_url, f"/profile/{user_id}", params=params).json()

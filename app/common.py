@@ -21,6 +21,8 @@ PROCESSED = ROOT / "data" / "processed"
 APP_DIR = Path(__file__).resolve().parent
 
 ANONYMOUS = "anonymous"  # sent as user_id for guests (the API requires a non-empty id)
+# query_ingredients sent with feedback given from the profile page (not after a search)
+PROFILE_QUERY = "(profil)"
 
 # Keys are what the API / ranker expect, values are what the user sees.
 ALLERGIES = {"gluten": "Gluten", "dairy": "Produits laitiers", "nut": "Fruits à coque",
@@ -33,11 +35,13 @@ EXAMPLES = {
     "Poulet": ["chicken"],
     "Chocolat + fraise": ["chocolate", "strawberry"],
 }
-FEEDBACK = {  # api value -> (icon, French label)
-    "like": ("👍", "J'aime"),
-    "dislike": ("👎", "Bof"),
-    "not_for_me": ("🚫", "Pas pour moi"),
-    "cooked": ("🍳", "Cuisiné"),
+FEEDBACK = {  # api value -> (icon, French label). Effects: see api/db.py feedback_for_user.
+    "like": ("👍", "J'aime"),             # boosts it and close ingredients on every search
+    "dislike": ("👎", "Je n'aime pas"),   # never suggested again
+    "not_for_me": ("🚫", "Pas avec ça"),  # not suggested again with this same search
+    "cooked": ("🍳", "Cuisiné"),          # counts as a like
+    "allergic": ("⚠️", "Allergique"),     # permanent ban of it and its variants
+    "not_allergic": ("✅", "Plus allergique"),
     "click": ("➕", "Ajouté à la liste"),
 }
 
@@ -110,7 +114,7 @@ def user_label(user_id: str) -> str:
     """Readable name for any id seen by the API: guest, app account or Food.com profile."""
     from app import auth
 
-    if user_id == ANONYMOUS:
+    if user_id == ANONYMOUS or user_id.startswith(auth.GUEST_PREFIX):
         return "Invité"
     account = auth.store().users.get(user_id)
     if account:
@@ -218,6 +222,10 @@ _EXPLANATIONS = [
     (re.compile(r"close in the learned pairing embedding space"),
      "le modèle a appris qu'ils vont bien ensemble"),
     (re.compile(r"suggested by the pairing model"), "suggéré par le modèle"),
+    # feedback loop (HybridRanker._feedback_reason)
+    (re.compile(r"^you liked it$"), "tu l'as aimé"),
+    (re.compile(r"^close to (.+), which you liked$"),
+     lambda m: f"proche de {fr(m[1])}, que tu as aimé"),
 ]
 
 
@@ -228,8 +236,9 @@ def explanation_fr(text: str) -> str:
     out = []
     for part in text.split(" + "):
         for pattern, french in _EXPLANATIONS:
-            if pattern.search(part):
-                out.append(french)
+            m = pattern.search(part.strip())
+            if m:
+                out.append(french(m) if callable(french) else french)
                 break
         else:
             out.append(part)

@@ -4,6 +4,7 @@ Two modes:
 - around one ingredient (e.g. salmon): which fridge items pair best with it;
 - no base ingredient: the best pairs that can be made from the fridge alone.
 Both rely on the API's `candidates` whitelist, so only fridge items are ever suggested.
+The API also applies the user's feedback (likes, dislikes, allergies) by itself.
 """
 from __future__ import annotations
 
@@ -62,8 +63,10 @@ def like(query: list[str], name: str) -> None:
 
 
 def ask(query: list[str], candidates: list[str] | None, top_k: int) -> dict:
-    return api_client.recommend(query, auth.api_user_id(user), top_k, allergies, diet,
-                                base_url=api_url(), candidates=candidates)[0]
+    return api_client.recommend(query, auth.log_user_id(user), top_k, allergies, diet,
+                                base_url=api_url(), candidates=candidates,
+                                exclude=sorted(disliked),
+                                history_user_id=auth.history_user_id(user))[0]
 
 
 # ---------------------------------------------------------------- my fridge
@@ -203,7 +206,7 @@ if res:
             card(f"{i}. {fr(r['name']).capitalize()}", r["score"] / best if best > 0 else 0,
                  r["explanation"], [base], r["name"], [r["name"]])
         if res["filtered"]:
-            st.caption("Non proposés à cause de ton régime ou de tes allergies : "
+            st.caption("Non proposés à cause de ton régime, de tes allergies ou de tes avis : "
                        + ", ".join(fr(f) for f in res["filtered"]) + ".")
         if res["to_buy"]:
             st.markdown("#### 🛒 Pour aller plus loin, à acheter")

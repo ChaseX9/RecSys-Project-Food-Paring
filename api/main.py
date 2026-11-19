@@ -31,6 +31,11 @@ class RecommendIn(BaseModel):
     # Optional whitelist: only these ingredients may be recommended (e.g. what is in the
     # user's fridge). None = the whole vocabulary.
     candidates: list[str] | None = Field(default=None, max_length=500)
+    # Ingredients never to recommend for this request (e.g. the user's "never suggest" list).
+    exclude: list[str] | None = Field(default=None, max_length=500)
+    # Whose rating history personalizes the ranking (e.g. a linked Food.com profile).
+    # Feedback is always read from `user_id`. None = `user_id`.
+    history_user_id: str | None = Field(default=None, max_length=100)
 
 
 class Recommendation(BaseModel):
@@ -98,25 +103,30 @@ def create_app(db_path: str | None = None, recommender="auto") -> FastAPI:
         if model is None:
             recs = mock_recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
                                   allergies=(req.allergies or []) + fb["allergic"], diet=req.diet,
-                                  disliked=fb["disliked"], candidates=req.candidates)
+                                  disliked=fb["disliked"] + (req.exclude or []),
+                                  candidates=req.candidates)
         else:
             recs = model.recommend(req.ingredients, top_k=req.top_k, user_id=req.user_id,
                                    allergies=(req.allergies or []) + fb["allergic"], diet=req.diet,
                                    liked=fb["liked"], disliked=fb["disliked"] + fb["allergic"],
-                                   candidates=req.candidates)
+                                   candidates=req.candidates, exclude=req.exclude,
+                                   history_user_id=req.history_user_id)
         return RecommendOut(query=req.ingredients, mock=model is None,
                             applied_feedback=AppliedFeedback(**fb), recommendations=recs)
 
     @app.get("/profile/{user_id}")
-    def get_profile(user_id: str, n: int = Query(10, ge=1, le=50)):
+    def get_profile(user_id: str, n: int = Query(10, ge=1, le=50),
+                    history_user_id: str | None = Query(None, max_length=100)):
         """The user's taste profile as the recommender sees it right now: ratings history
-        (Food.com users) updated with every like / dislike sent to /log_interaction."""
+        (Food.com users, or ``history_user_id``) updated with every like / dislike sent to
+        /log_interaction by ``user_id``."""
         fb = db.feedback_for_user(path, user_id)
         model = state["model"]
         if model is None:
             return {"user_id": user_id, "mock": True, "feedback": fb, "likes": [], "dislikes": []}
         return {"user_id": user_id, "mock": False, "feedback": fb,
-                **model.profile(user_id, fb["liked"], fb["disliked"] + fb["allergic"], n)}
+                **model.profile(history_user_id or user_id, fb["liked"],
+                                fb["disliked"] + fb["allergic"], n)}
 
     @app.get("/feedback/{user_id}", response_model=AppliedFeedback)
     def get_feedback(user_id: str):

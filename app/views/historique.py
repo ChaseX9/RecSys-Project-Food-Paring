@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from app import api_client, auth
-from app.common import API_DOWN_MSG, FEEDBACK, api_url, fr
+from app.common import API_DOWN_MSG, FEEDBACK, PROFILE_QUERY, api_url, fr
 
 user = auth.current_user()
 if user is None:
@@ -29,13 +29,15 @@ if not rows:
 
 df = pd.DataFrame(rows)
 counts = df["feedback"].value_counts()
-for col, (fb, (icon, label)) in zip(st.columns(len(FEEDBACK)), FEEDBACK.items()):
+shown = {fb: v for fb, v in FEEDBACK.items() if counts.get(fb, 0) or fb in ("like", "dislike")}
+for col, (fb, (icon, label)) in zip(st.columns(len(shown)), shown.items()):
     col.metric(f"{icon} {label}", int(counts.get(fb, 0)))
 
 st.dataframe(pd.DataFrame({
     "Date": pd.to_datetime(df["created_at"], utc=True).dt.tz_convert("Europe/Paris")
               .dt.strftime("%d/%m/%Y %H:%M"),
-    "Recherche": df["query_ingredients"].map(lambda q: " + ".join(fr(i) for i in q)),
+    "Recherche": df["query_ingredients"].map(
+        lambda q: "depuis mon profil" if q == [PROFILE_QUERY] else " + ".join(fr(i) for i in q)),
     "Suggestion": df["recommended_ingredient"].map(lambda n: fr(n) if isinstance(n, str) else "—"),
     "Avis": df["feedback"].map(lambda f: " ".join(FEEDBACK.get(f, ("", f)))),
     "Note": df["note"].fillna(""),

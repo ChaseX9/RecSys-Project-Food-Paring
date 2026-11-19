@@ -262,3 +262,28 @@ def test_model_candidates_restricts_output(model_client):
     empty = model_client.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"],
                                                   "candidates": []}).json()
     assert empty["recommendations"] == []
+
+
+
+def test_exclude_removes_items_mock_and_model(client, model_client):
+    payload = {"user_id": "u1", "ingredients": ["salmon"], "top_k": 5}
+    first = client.post("/recommend", json=payload).json()["recommendations"][0]["name"]
+    body = client.post("/recommend", json=payload | {"exclude": [first]}).json()
+    assert first not in [r["name"] for r in body["recommendations"]]
+    assert body["applied_feedback"]["disliked"] == []        # exclude is not stored as feedback
+
+    names, _ = _names(model_client)
+    body = model_client.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"],
+                                                 "top_k": 5, "exclude": [names[0]]}).json()
+    assert names[0] not in [r["name"] for r in body["recommendations"]]
+
+
+def test_history_user_id_keeps_feedback_on_the_account(model_client):
+    """A linked Food.com profile personalizes; the feedback still comes from user_id."""
+    _log(model_client, "cilantro", "dislike", user="account")
+    body = model_client.post("/recommend", json={"user_id": "account", "history_user_id": "1533",
+                                                 "ingredients": ["tomato"]}).json()
+    assert "cilantro" not in [r["name"] for r in body["recommendations"]]
+    assert body["applied_feedback"]["disliked"] == ["cilantro"]
+    prof = model_client.get("/profile/account", params={"history_user_id": "1533"}).json()
+    assert {"name": "cilantro", "value": -1.0} in prof["dislikes"]

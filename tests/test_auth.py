@@ -35,7 +35,7 @@ def test_register_and_update_profile():
     u = auth.update_profile("marie.d", diet="vegan", allergies=["soy"], top_k=5,
                             food_com_id="1533")
     assert (u.diet, u.allergies, u.top_k, u.role) == ("vegan", ["soy"], 5, "user")
-    assert auth.api_user_id(u) == "1533" and auth.log_user_id(u) == "marie.d"
+    assert auth.history_user_id(u) == "1533" and auth.log_user_id(u) == "marie.d"
     with pytest.raises(auth.AuthError):
         auth.update_profile("marie.d", food_com_id="abc")
     with pytest.raises(ValueError):

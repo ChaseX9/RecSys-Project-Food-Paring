@@ -83,20 +83,76 @@ def test_pairings_flow_logs_feedback_under_account(api):
     assert rows[0]["user_id"] == "demo" and rows[0]["feedback"] == "like"
 
 
-def test_profile_preferences_prefill_search_and_not_for_me_excludes(api):
+def _names(at) -> list[str]:
+    return [r["name"] for r in at.session_state.results["recs"]]
+
+
+def test_profile_preferences_prefill_search_and_dislike_is_applied_by_api(api):
     at = _login("camille")  # vegetarian, nut allergy, dislikes cilantro
     assert at.session_state.f_diet == "Végétarien"
     assert at.session_state.f_allergies == ["nut"]
     _button(at, "Tomate + basilic").click().run()
     _button(at, "🔍").click().run()
     res = at.session_state.results
-    assert res["diet"] == "vegetarian" and "cilantro" not in {r["name"] for r in res["recs"]}
+    assert res["diet"] == "vegetarian" and "cilantro" not in _names(at)  # sent as `exclude`
+    assert len(res["recs"]) == 10                                         # no client-side cut
 
     first = res["recs"][0]["name"]
-    _button(at, "🚫").click().run()
-    assert first in auth.store().users["camille"].disliked
+    _button(at, "👎").click().run()
+    assert auth.store().users["camille"].disliked == ["cilantro"]  # profile list untouched
     _button(at, "🔍").click().run()
-    assert first not in {r["name"] for r in at.session_state.results["recs"]}
+    assert first not in _names(at)
+    assert at.session_state.results["body"]["applied_feedback"]["disliked"] == [first]
+
+
+def test_not_for_me_only_applies_to_the_same_search(api):
+    at = _login("demo")
+    _button(at, "Tomate + basilic").click().run()
+    _button(at, "🔍").click().run()
+    first = _names(at)[0]
+    _button(at, "🚫").click().run()
+    _button(at, "🔍").click().run()
+    assert first not in _names(at)
+    fb = api.get("/feedback/demo").json()
+    assert first not in fb["disliked"]  # outside this search it is still allowed
+
+
+def test_feedback_of_food_com_linked_account_is_applied(api):
+    """demo is linked to a Food.com profile: ratings come from it, feedback from the account."""
+    at = _login("demo")
+    assert auth.store().users["demo"].food_com_id
+    _button(at, "Saumon + citron").click().run()
+    _button(at, "🔍").click().run()
+    first = _names(at)[0]
+    _button(at, "👎").click().run()
+    assert api.get("/interactions").json()[0]["user_id"] == "demo"
+    _button(at, "🔍").click().run()
+    assert first not in _names(at)
+
+
+def test_allergy_button_bans_the_ingredient(api):
+    at = _login("demo")
+    _button(at, "Poulet").click().run()
+    _button(at, "🔍").click().run()
+    first = _names(at)[0]
+    _button(at, "Oui, j'y suis allergique").click().run()
+    assert api.get("/interactions").json()[0]["feedback"] == "allergic"
+    _button(at, "🔍").click().run()
+    assert first not in _names(at)
+    assert at.session_state.results["body"]["applied_feedback"]["allergic"] == [first]
+
+
+def test_profile_shows_feedback_and_lets_the_user_change_their_mind(api):
+    at = _login("demo")
+    _button(at, "Poulet").click().run()
+    _button(at, "🔍").click().run()
+    first = _names(at)[0]
+    _button(at, "👎").click().run()
+    at = _goto(at, "profil.py")
+    _button(at, "👍 En fait j'aime").click().run()
+    assert not at.exception
+    assert api.get("/feedback/demo").json()["liked"] == [first]
+    assert api.get("/interactions").json()[0]["query_ingredients"] == ["(profil)"]
 
 
 def test_cooked_note_is_read_at_click_time(api):
@@ -109,14 +165,21 @@ def test_cooked_note_is_read_at_click_time(api):
     assert row["feedback"] == "cooked" and row["note"] == "bruschetta"
 
 
-def test_guest_has_no_profile_or_admin_and_logs_as_anonymous(api):
+def test_guest_has_no_profile_or_admin_and_each_guest_has_own_id(api):
     at = _login(None)
     links = {p.label for p in at.get("page_link")} if at.get("page_link") else set()
     assert not links & {"Mon profil", "Administration", "Mon historique"}
     _button(at, "Poulet").click().run()
     _button(at, "🔍").click().run()
-    _button(at, "👍").click().run()
-    assert api.get("/interactions").json()[0]["user_id"] == auth.GUEST
+    first = _names(at)[0]
+    _button(at, "👎").click().run()
+    guest = api.get("/interactions").json()[0]["user_id"]
+    assert guest.startswith(auth.GUEST_PREFIX)
+
+    other = _login(None)  # another browser session: the first guest's dislike is not applied
+    _button(other, "Poulet").click().run()
+    _button(other, "🔍").click().run()
+    assert other.session_state.guest_id != guest and first in _names(other)
 
 
 def test_logout_returns_to_login(api):
@@ -210,6 +273,10 @@ def test_explanations_are_translated():
     assert out == ("Souvent cuisinés ensemble dans les recettes et "
                    "partagent des molécules aromatiques.")
     assert "exemple" in explanation_fr("[mock] dill is often paired with salmon.")
+    assert explanation_fr("share aromatic compounds (x) + close to basil, which you liked") == \
+        "Partagent des molécules aromatiques et proche de basilic, que tu as aimé."
+    assert explanation_fr("suggested by the pairing model + you liked it") == \
+        "Suggéré par le modèle et tu l'as aimé."
 
 
 def test_client_reports_unreachable_api():
