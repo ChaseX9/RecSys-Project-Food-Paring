@@ -331,3 +331,15 @@ def test_sign_up_page_creates_account_in_api(api):
     _button(at, "Créer mon compte").click().run()
     assert not at.exception and at.session_state.auth_user == "lea.m"
     assert _user(api, "lea.m")["display_name"] == "Léa M"
+
+
+def test_ingredient_search_ignores_accents_and_ligatures():
+    from app.common import fold, ingredient_label, load_vocab
+
+    assert fold("Œuf") == "oeuf" and fold("bœuf haché") == "boeuf hache"
+    # the search box only does a substring match on the label: "oeuf" must find "œuf"
+    assert "oeuf" in ingredient_label("egg").lower()
+    assert "boeuf" in ingredient_label("beef").lower()
+    assert ingredient_label("butter") == "beurre (butter)"   # no accent: label unchanged
+    for name in load_vocab():                                # every typed form finds its ingredient
+        assert name in ingredient_label(name)
