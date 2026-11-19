@@ -1,8 +1,8 @@
 {
   "recipes_raw": 522517,
-  "ingredients_distinct_before_filter": 5945,
-  "ingredients_vocab_size": 2609,
-  "recipes_kept": 484913,
+  "ingredients_distinct_before_filter": 5635,
+  "ingredients_vocab_size": 2426,
+  "recipes_kept": 484954,
   "interactions_raw": 1401982,
   "rating_distribution_raw": {
     "0": 76248,
@@ -13,46 +13,46 @@
     "5": 1012082
   },
   "interactions_after_drop_zero": 1325734,
-  "interactions_on_kept_recipes": 1229848,
-  "interactions_after_kcore": 972113,
-  "recipes_with_interactions": 226978,
+  "interactions_on_kept_recipes": 1229947,
+  "interactions_after_kcore": 972204,
+  "recipes_with_interactions": 226997,
   "split_sizes": {
-    "train": 921553,
-    "val": 25280,
-    "test": 25280
+    "train": 921640,
+    "val": 25282,
+    "test": 25282
   },
-  "n_users": 25280,
-  "n_recipes": 226978,
-  "sparsity": 0.9998305834176646,
-  "positive_share_train": 0.7598499489448789,
-  "train_recipes": 222552,
-  "recipes_only_in_val_test": 4426,
+  "n_users": 25282,
+  "n_recipes": 226997,
+  "sparsity": 0.9998305951425314,
+  "positive_share_train": 0.7598454928171521,
+  "train_recipes": 222569,
+  "recipes_only_in_val_test": 4428,
   "users_with_empty_profile": 334,
   "flavorgraph": {
-    "flavorgraph_matched_ingredients": 2288,
-    "flavorgraph_matched_share_recipe_weighted": 0.9766051151838616,
+    "flavorgraph_matched_ingredients": 2206,
+    "flavorgraph_matched_share_recipe_weighted": 0.9864270908975162,
     "ingredients_with_compounds": 275,
-    "ingredients_with_compounds_share_recipe_weighted": 0.501373933078268,
-    "top100_ingredients_with_compounds": 54,
+    "ingredients_with_compounds_share_recipe_weighted": 0.5173474925846281,
+    "top100_ingredients_with_compounds": 55,
     "n_compounds": 1610,
     "chemical_similarity_nonzero_pairs": 63590
   },
   "top_ingredients": [
     {
       "name": "butter",
-      "n_recipes": 146348
+      "n_recipes": 146735
     },
     {
       "name": "sugar",
       "n_recipes": 127472
     },
     {
-      "name": "garlic",
-      "n_recipes": 120470
+      "name": "egg",
+      "n_recipes": 121150
     },
     {
-      "name": "egg",
-      "n_recipes": 118411
+      "name": "garlic",
+      "n_recipes": 120470
     },
     {
       "name": "onion",
@@ -60,31 +60,39 @@
     },
     {
       "name": "flour",
-      "n_recipes": 104234
+      "n_recipes": 104320
     },
     {
       "name": "olive oil",
-      "n_recipes": 89139
+      "n_recipes": 89854
     },
     {
       "name": "milk",
-      "n_recipes": 58940
+      "n_recipes": 64649
+    },
+    {
+      "name": "black pepper",
+      "n_recipes": 53996
     },
     {
       "name": "pepper",
       "n_recipes": 48894
     },
     {
+      "name": "brown sugar",
+      "n_recipes": 48075
+    },
+    {
       "name": "tomato",
-      "n_recipes": 44809
+      "n_recipes": 45070
+    },
+    {
+      "name": "cinnamon",
+      "n_recipes": 43177
     },
     {
       "name": "lemon juice",
       "n_recipes": 43017
-    },
-    {
-      "name": "brown sugar",
-      "n_recipes": 40829
     },
     {
       "name": "baking powder",
@@ -108,7 +116,11 @@
     },
     {
       "name": "parmesan cheese",
-      "n_recipes": 32157
+      "n_recipes": 32326
+    },
+    {
+      "name": "sour cream",
+      "n_recipes": 31255
     },
     {
       "name": "vanilla",
@@ -119,32 +131,24 @@
       "n_recipes": 29273
     },
     {
-      "name": "black pepper",
-      "n_recipes": 28518
-    },
-    {
-      "name": "cinnamon",
-      "n_recipes": 27978
-    },
-    {
-      "name": "sour cream",
-      "n_recipes": 26929
+      "name": "cream cheese",
+      "n_recipes": 27147
     },
     {
       "name": "margarine",
-      "n_recipes": 24642
-    },
-    {
-      "name": "ground black pepper",
-      "n_recipes": 24069
+      "n_recipes": 25240
     },
     {
       "name": "powdered sugar",
       "n_recipes": 23894
     },
     {
-      "name": "cream cheese",
-      "n_recipes": 23534
+      "name": "chicken broth",
+      "n_recipes": 23842
+    },
+    {
+      "name": "soy sauce",
+      "n_recipes": 23058
     },
     {
       "name": "garlic powder",
@@ -153,13 +157,13 @@
     {
       "name": "cilantro",
       "n_recipes": 22834
-    },
-    {
-      "name": "celery",
-      "n_recipes": 22503
     }
   ],
   "rarest_kept_ingredients": [
+    {
+      "name": "pumpkin flesh",
+      "n_recipes": 20
+    },
     {
       "name": "purslane",
       "n_recipes": 20
@@ -181,11 +185,7 @@
       "n_recipes": 20
     },
     {
-      "name": "soymilk lite",
-      "n_recipes": 20
-    },
-    {
-      "name": "sugar-free instant butterscotch pudding mix",
+      "name": "sugar-free instant chocolate fudge pudding mix",
       "n_recipes": 20
     },
     {
