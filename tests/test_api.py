@@ -107,9 +107,46 @@ def test_feedback_state_latest_wins_and_not_for_me_is_query_scoped(tmp_path):
     db.insert_interaction(path, "u", ["tomato"], "cilantro", "dislike", None)
     db.insert_interaction(path, "u", ["salmon"], "dill", "not_for_me", None)  # only with salmon
     db.insert_interaction(path, "u", ["tomato"], "garlic", "click", None)     # ignored
-    assert db.feedback_for_user(path, "u", ["tomato"]) == {"liked": ["basil"], "disliked": ["cilantro"]}
+    assert db.feedback_for_user(path, "u", ["tomato"]) == {"liked": ["basil"], "disliked": ["cilantro"],
+                                                           "allergic": []}
     assert db.feedback_for_user(path, "u", ["Salmon"])["disliked"] == ["cilantro", "dill"]
-    assert db.feedback_for_user(path, "other", ["tomato"]) == {"liked": [], "disliked": []}
+    assert db.feedback_for_user(path, "other", ["tomato"]) == {"liked": [], "disliked": [], "allergic": []}
+
+
+def test_allergy_is_permanent(tmp_path):
+    path = str(tmp_path / "fb.db")
+    db.init_db(path)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "allergic", None)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "like", None)        # misclick: must not lift it
+    fb = db.feedback_for_user(path, "u", ["salad"])
+    assert fb["allergic"] == ["peanut"] and "peanut" not in fb["liked"]
+
+
+def test_not_allergic_lifts_the_allergy(tmp_path):
+    path = str(tmp_path / "fb.db")
+    db.init_db(path)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "like", None)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "allergic", None)
+    db.insert_interaction(path, "u", ["salad"], "peanut", "not_allergic", None)
+    fb = db.feedback_for_user(path, "u", ["salad"])
+    assert fb["allergic"] == [] and fb["liked"] == ["peanut"]                 # back to its previous state
+    db.insert_interaction(path, "u", ["salad"], "peanut", "allergic", None)  # allergic again
+    assert db.feedback_for_user(path, "u")["allergic"] == ["peanut"]
+
+
+def test_old_database_is_migrated_for_allergic(tmp_path):
+    import sqlite3
+    path = tmp_path / "old.db"
+    old_schema = db.SCHEMA.replace(", 'allergic', 'not_allergic'", "")
+    with sqlite3.connect(path) as conn:
+        conn.executescript(old_schema)
+        conn.execute("INSERT INTO interactions (user_id, query_ingredients, recommended_ingredient, feedback, "
+                     "note, created_at) VALUES ('u', '[\"salad\"]', 'dill', 'like', NULL, '2026-11-01')")
+    db.init_db(path)                                                           # migration
+    db.insert_interaction(path, "u", ["salad"], "peanut", "allergic", None)
+    rows = db.list_interactions(path, "u")
+    assert [r["feedback"] for r in rows] == ["allergic", "like"] and rows[1]["created_at"] == "2026-11-01"
+    db.init_db(path)                                                           # idempotent
 
 
 def test_mock_dislike_removes_item_on_next_call(client):
@@ -131,7 +168,7 @@ def model_client(tmp_path):
     emb = np.array([[1, 0, 0], [0.9, 0.4, 0], [0.88, 0.45, 0], [0.9, 0, 0.4],
                     [0.88, 0, 0.45], [0.3, 0.3, 0.9]], dtype=float)
     vocab = pd.DataFrame({"ingredient_id": range(len(VOCAB)), "name": VOCAB})
-    cfg = RankingConfig(beta_chem=0.0, gamma_pref=0.0, normalize=True, feedback_sim_threshold=0.9)
+    cfg = RankingConfig(beta_chem=0.0, gamma_pref=0.2, normalize=True, feedback_sim_threshold=0.9)
     rec = ModelRecommender(processed_dir=tmp_path, ranker=HybridRanker(emb, vocab, config=cfg))
     with TestClient(create_app(str(tmp_path / "m.db"), recommender=rec)) as c:
         yield c
@@ -143,16 +180,14 @@ def _names(client, user="u1"):
     return [r["name"] for r in body["recommendations"]], body
 
 
-def test_model_dislike_bans_item_and_pushes_down_its_neighbours(model_client):
+def test_model_dislike_bans_only_that_item(model_client):
     before, body0 = _names(model_client)
     _log(model_client, "cilantro", "dislike")
     after, body = _names(model_client)
     assert "cilantro" in before and "cilantro" not in after
     score = lambda b, n: next(r["score"] for r in b["recommendations"] if r["name"] == n)
-    assert score(body, "cumin") < score(body0, "cumin")          # close to cilantro -> lower
-    assert score(body, "basil") == pytest.approx(score(body0, "basil"))   # unrelated -> unchanged
-    cumin = next(r for r in body["recommendations"] if r["name"] == "cumin")
-    assert "cilantro" in cumin["feedback"] and "disliked" in cumin["explanation"]
+    assert score(body, "cumin") == pytest.approx(score(body0, "cumin"))   # neighbour untouched
+    assert all(r["feedback"] is None for r in body["recommendations"])
     assert _names(model_client, user="someone_else")[0] == before  # feedback is per user
 
 
@@ -163,3 +198,42 @@ def test_model_like_boosts_item_and_neighbours(model_client):
     assert after.index("oregano") <= before.index("oregano")
     assert after.index("basil") <= before.index("basil")
     assert next(r for r in body["recommendations"] if r["name"] == "oregano")["feedback"] == "you liked it"
+    score = lambda b, n: next(r["score"] for r in b["recommendations"] if r["name"] == n)
+    assert score(body, "cumin") == pytest.approx(score(_names(model_client, user="fresh")[1], "cumin"))
+
+
+def test_profile_is_updated_by_feedback(model_client):
+    # new app user: no rating history, the profile is built from feedback only (cold start)
+    p0 = model_client.get("/profile/newbie").json()
+    assert p0["likes"] == [] and p0["dislikes"] == [] and p0["has_rating_history"] is False
+    _log(model_client, "oregano", "like", user="newbie")
+    _log(model_client, "cilantro", "dislike", user="newbie")
+    p1 = model_client.get("/profile/newbie").json()
+    likes = {d["name"]: d["value"] for d in p1["likes"]}
+    assert likes["oregano"] == pytest.approx(1.5) and 0 < likes["basil"] < 1.5   # liked + close neighbour
+    assert p1["dislikes"] == [{"name": "cilantro", "value": -1.0}]                # no spread to cumin
+    _log(model_client, "cilantro", "like", user="newbie")                         # changed their mind
+    p2 = model_client.get("/profile/newbie").json()
+    assert "cilantro" in {d["name"] for d in p2["likes"]} and p2["dislikes"] == []
+
+
+
+def test_model_allergic_bans_ingredient_and_its_variants(tmp_path):
+    vocab = ["tomato", "peanut", "peanut butter", "peanut oil", "basil", "water chestnut"]
+    emb = np.array([[1, 0], [0.9, 0.1], [0.85, 0.2], [0.8, 0.3], [0.95, 0.05], [0.7, 0.3]], dtype=float)
+    ranker = HybridRanker(emb, pd.DataFrame({"ingredient_id": range(6), "name": vocab}),
+                          config=RankingConfig(beta_chem=0.0, gamma_pref=0.2, normalize=True))
+    rec = ModelRecommender(processed_dir=tmp_path, ranker=ranker)
+    with TestClient(create_app(str(tmp_path / "a.db"), recommender=rec)) as c:
+        _log(c, "peanut", "allergic")
+        _log(c, "peanut", "like")                                    # cannot lift the allergy
+        body = c.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"]}).json()
+        names = {r["name"] for r in body["recommendations"]}
+        assert names == {"basil", "water chestnut"}                  # every peanut variant is gone
+        assert body["applied_feedback"]["allergic"] == ["peanut"]
+        prof = c.get("/profile/u1").json()
+        assert {"name": "peanut", "value": -1.0} in prof["dislikes"]
+        _log(c, "peanut", "not_allergic")                            # mistake corrected
+        body = c.post("/recommend", json={"user_id": "u1", "ingredients": ["tomato"]}).json()
+        assert "peanut" in {r["name"] for r in body["recommendations"]}
+        assert body["applied_feedback"]["allergic"] == []

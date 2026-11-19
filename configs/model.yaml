@@ -30,7 +30,10 @@ ranking:
   gamma_pref: 0.2       # user taste profile (product choice: personalization on)
   pref_source: rating   # profile from ratings 1-5 (centered, shrunk), see src/data/rating_profiles.py
   pref_mode: multiplicative   # preference only re-orders plausible pairings
-  neg_weight: 0.5       # weight of disliked ingredients (ratings <= 3 below the user's mean)
+  profile_combine: net  # consistency per ingredient: (liked - disliked) / (liked + disliked + alpha)
+  profile_alpha: 5.0    # smoothing, in typical ratings (best net setting on val)
+  dislike_below_rating: 3   # only 1/5 and 2/5 count as dislikes
+  neg_weight: 0.5       # only used by profile_combine: separate
   profile_idf: false    # idf removed the signal on val (common ingredients are predictive)
   profile_conf_k: 10    # users with few ratings are trusted less
   delta_cooc: 0.7       # log co-occurrence in train recipes

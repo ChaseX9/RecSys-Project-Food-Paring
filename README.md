@@ -78,8 +78,8 @@ Trained variants are cached in `artifacts/ablations/<variant>/` (use `--retrain`
 
 User profiles use **every train rating**, not only the 5/5 ones (`src/data/rating_profiles.py`):
 
-- **Centered, shrunk ratings:** `weight = rating - b_u`, where `b_u` is the user's mean rating pulled toward the global mean (4.69). A user who rates everything 5/5 (26% of users) still gets a positive profile; a 2/5 from a generous user becomes a dislike. Only ratings <= 3 can count as dislikes.
-- **Like / dislike profiles:** ingredients of liked recipes go to `like`, ingredients of disliked recipes go to `dislike`; `pref = like - 0.5 * dislike`.
+- **Centered, shrunk ratings:** `weight = rating - b_u`, where `b_u` is the user's mean rating pulled toward the global mean (4.69). A user who rates everything 5/5 (26% of users) still gets a positive profile. Only ratings **strictly below 3** (1/5, 2/5) count as dislikes. Weights are scaled so that one typical rating weighs about 1 for every user.
+- **Consistency per ingredient:** a rating is about a whole recipe, not about each of its ingredients. `pref(i) = (P_i - N_i) / (P_i + N_i + alpha)`, with `P_i` / `N_i` the weight of liked / disliked recipes containing `i`. Flour in 25 liked and 2 disliked cakes stays liked; an ingredient only seen in disliked recipes becomes negative; `alpha = 5` keeps a single recipe from being decisive. (Normalizing likes and dislikes separately let 2 disliked cakes weigh as much as 25 liked ones: a baker ended up "disliking" flour.)
 - **Confidence:** `n / (n + 10)`: a user with 5 ratings is trusted less than one with 50.
 - **Multiplicative gating:** `score = pairing * (1 + gamma * pref)`. The preference only re-orders plausible pairings: a baker's love of flour no longer pushes flour next to salmon.
 - **Level 2 (embedding user vector):** `pref_source: embedding | hybrid` builds the user vector in the NLGCL space (liked recipes minus disliked ones). Implemented and evaluated, not served (no gain on val).
@@ -94,16 +94,22 @@ python scripts/eval_personalization.py --config <copy of configs/personalization
 
 ### Feedback loop
 
-Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingredient`) is applied on the **next** `POST /recommend` of the same user, no retraining needed (`api/db.py: feedback_for_user`, `HybridRanker.recommend(liked=, disliked=)`):
+Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingredient`) **updates the user's taste profile**, and the next `POST /recommend` uses it. No retraining needed (`api/db.py: feedback_for_user`, `HybridRanker.preference(user_id, liked, disliked)`):
 
-| feedback | effect |
+| feedback | effect on the profile |
 |---|---|
-| `dislike` | ingredient never recommended again to this user; ingredients close to it in the NLGCL space (cosine > `feedback_sim_threshold`) are ranked lower |
-| `not_for_me` | same, but only for the same query ("not with this dish") |
-| `like`, `cooked` | ingredient and its close neighbours are ranked higher |
+| `like`, `cooked` | preference of the ingredient set to 1.5 (rating-based values are in [-1, 1]); its close neighbours in the NLGCL space (cosine > `feedback_sim_threshold`) are raised proportionally |
+| `dislike` | preference set to -1 and the ingredient is never recommended again; its neighbours are **not** touched |
+| `not_for_me` | ingredient excluded only for the same query ("not with this dish") |
+| `allergic` | **permanent** ban of the ingredient and of every ingredient containing it as a word (`peanut` -> peanut butter, creamy peanut butter, peanut oil...), on every query; a later `like` does **not** lift it |
+| `not_allergic` | removes the allergy (the only way to lift it, e.g. after a mistake); the ingredient goes back to its previous like / dislike state |
 | `click` | logged, not applied (implicit, too weak) |
 
-The latest feedback on an ingredient wins (a user can change their mind). `/recommend` returns the feedback it applied (`applied_feedback`) and, per item, why the feedback moved it (`feedback`, also appended to `explanation`). `GET /feedback/{user_id}` shows the current state. Settings: `feedback_*` in `src/ranking/hybrid.py:RankingConfig`.
+- **Latest feedback wins:** the state of an ingredient is the most recent feedback on it, so a user who disliked cilantro and later likes it gets cilantro back. Allergies are the exception: only `not_allergic` lifts them.
+- **Existing databases:** `data/app.db` files created before `allergic` / `not_allergic` existed are migrated automatically at startup (rows, ids and timestamps kept).
+- **Cold start:** a new app user (no Food.com history) starts with an empty profile, built from their very first like.
+- The preference stays **multiplicative**: a liked ingredient goes up where it pairs well (coconut milk with chicken), not next to anything.
+- `GET /profile/{user_id}` shows the current profile (ratings history + feedback), `GET /feedback/{user_id}` the raw feedback state. `/recommend` returns `applied_feedback` and, per item, `feedback` ("you liked it", "close to thyme, which you liked").
 
 `/recommend` serves the trained model when `artifacts/ingredient_embeddings.npy` exists (`"mock": false`, check `GET /health`), and falls back to the mock otherwise or with `FOODPAIRING_MOCK=1`.
 
