@@ -152,4 +152,4 @@ def save_artifacts(
         json.dump(meta, f, indent=2)
     if model is not None:
         torch.save(model.state_dict(), out_dir / "nlgcl_state.pt")
-    print(f"Saved embeddings {embeddings.shape} → {out_dir}")
+    print(f"Saved embeddings {embeddings.shape} -> {out_dir}")

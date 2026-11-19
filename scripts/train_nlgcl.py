@@ -38,7 +38,7 @@ def main():
 
     graph_path = processed / "ingredient_norm_adj.npz"
     if args.rebuild_graph or not graph_path.exists():
-        print("Building ingredient graph …")
+        print("Building ingredient graph ...")
         gcfg = cfg.get("graph", {})
         graph = build_ingredient_graph(
             processed,

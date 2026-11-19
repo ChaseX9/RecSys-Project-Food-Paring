@@ -1,0 +1,30 @@
+# Ablation study: every variant is scored with the same harness, the same cases and the
+# same split as the baselines (protocol / hidden_ratio / seed come from configs/eval.yaml).
+#
+# Choose settings on `val`, report `test`: never pick a variant because it wins on test.
+
+model_config: configs/model.yaml
+eval_config: configs/eval.yaml
+out_dir: artifacts/ablations     # embeddings of each trained variant (cached, not versioned)
+splits: [val, test]
+
+# Train-time variants: overrides on top of configs/model.yaml.
+# Keys: lambda_cl, n_groups, temperature, graph_alpha, epochs.
+train_variants:
+  nlgcl: {}                        # reference model, configs/model.yaml as is
+  lightgcn: {lambda_cl: 0.0}       # innovation switched off: same encoder, no neighbor-layer CL
+  nlgcl_cl0.1: {lambda_cl: 0.1}    # contrastive loss with a weight that actually moves the gradients
+  nlgcl_npmi_graph: {graph_alpha: 1.0}   # graph without chemical edges (NPMI only)
+
+# Rank-time variants: overrides on top of the `ranking` block of configs/model.yaml.
+rank_variants:
+  full: {}
+  no_chem: {beta_chem: 0.0}
+  no_pref: {gamma_pref: 0.0}
+  emb_only: {beta_chem: 0.0, gamma_pref: 0.0}
+
+# Beyond-accuracy metrics (computed on the top-k lists)
+beyond_k: 10
+longtail_head_frac: 0.2          # head = 20% most frequent ingredients in train recipes
+grounded_npmi: 0.15              # same thresholds as src/explain/reasons.py
+grounded_chem: 0.05

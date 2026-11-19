@@ -59,6 +59,21 @@ print(evaluate_predictions(preds, setup.cases, ks=(10, 20)))         # {'ndcg@10
 
 Tests: `pytest tests/test_eval.py` (hand-computed metric values, mock predictions, anti-leakage checks).
 
+### Ablations
+
+`scripts/ablations.py` trains each model variant listed in `configs/ablations.yaml` and scores it, with each ranking variant, on the same cases as the baselines:
+
+- **Model:** NLGCL (reference) vs LightGCN (`lambda_cl = 0`, i.e. the innovation switched off), a stronger contrastive weight, and a graph built without chemical edges.
+- **Ranking:** full hybrid score vs no chemical score, no user preference, embedding only.
+- **Beyond accuracy (top-10):** catalog coverage, long-tail share, novelty, and `grounded@10`, the share of recommendations backed by a real explanation signal (strong NPMI with a query ingredient or shared aromatic compounds).
+
+```bash
+python scripts/ablations.py                    # val + test, about 15 min on CPU
+python scripts/ablations.py --max-cases 300    # quick run
+```
+
+Trained variants are cached in `artifacts/ablations/<variant>/` (use `--retrain` to retrain them). Tables are written to `artifacts/eval/ablations_unseen_recipes_<split>.{json,md}`. Pick settings on `val`, report `test`.
+
 ## Quick start
 
 1. Virtual Environment
