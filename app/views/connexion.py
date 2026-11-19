@@ -67,7 +67,7 @@ with form_col:
 with demo_col:
     st.subheader("🧪 Comptes de démonstration")
     st.caption("Recopie un identifiant et son mot de passe, ou clique sur « Se connecter ». "
-               "Comptes remis à zéro au redémarrage du serveur (pas encore de base de données).")
+               "Ces comptes sont créés au premier démarrage de l'API.")
     for username, password, extra in auth.DEMO_ACCOUNTS:
         with st.container(border=True):
             info, action = st.columns([3, 2], vertical_alignment="center")

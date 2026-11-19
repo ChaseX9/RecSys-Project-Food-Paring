@@ -1,7 +1,8 @@
 """Page "Trouver des accords": ingredients in, pairing suggestions out, feedback logged.
 
 Filters (diet, allergies, disliked ingredients, number of results) come from the user's profile
-and can be changed for a single search without touching the profile.
+and can be changed for a single search without touching the profile. Feedback (👍 👎 🚫 ⚠️ 🍳)
+goes to the API, which applies it by itself on the next searches (feedback loop, api/db.py).
 """
 from __future__ import annotations
 
@@ -11,13 +12,20 @@ from app import api_client, auth
 from app.common import (ALLERGIES, API_DOWN_MSG, DIET_LABELS, DIETS, EXAMPLES, FEEDBACK, api_url,
                         explanation_fr, fr, ingredient_img, ingredient_label, load_vocab,
                         mode_badge)
-from src.ranking.hybrid import RankingConfig
+from src.ranking.hybrid import ranking_config_from_yaml
 
-WEIGHTS = RankingConfig()  # same weights the ranker uses, to split the score bar
+WEIGHTS = ranking_config_from_yaml()  # same weights the API's ranker uses, to split the score bar
 PARTS = {  # score component -> (colour, what it means for a user)
-    "emb": ("#7FAF3A", "Habitudes culinaires"),
+    "emb": ("#7FAF3A", "Le modèle"),
+    "cooc": ("#4FA98F", "Recettes Food.com"),
     "chem": ("#E0A040", "Chimie des arômes"),
-    "pref": ("#5B9BD5", "Tes goûts"),
+}
+EFFECTS = {  # what the API does with each feedback, told to the user in the toast
+    "like": "on te proposera plus souvent cet ingrédient et ceux qui lui ressemblent",
+    "dislike": "il ne te sera plus proposé",
+    "not_for_me": "il ne te sera plus proposé avec cette recherche",
+    "cooked": "compté comme un « J'aime »",
+    "allergic": "ni lui ni ses variantes ne te seront plus jamais proposés",
 }
 
 user = auth.current_user()
@@ -63,14 +71,10 @@ def send_feedback(query: list[str], name: str, feedback: str, note_key: str | No
         return
     if feedback != "click":
         st.session_state.feedback[f"{'+'.join(query)}|{name}"] = (feedback, row_id)
-    if feedback == "not_for_me" and u and name not in u.disliked:
-        auth.update_profile(u.username, disliked=u.disliked + [name])
-        st.toast(f"{fr(name).capitalize()} ne te sera plus proposé (modifiable dans ton profil).",
-                 icon="🚫")
-        return
     if toast:
         icon, label = FEEDBACK[feedback]
-        st.toast(f"Merci ! Avis « {label} » enregistré pour {fr(name)}.", icon=icon)
+        st.toast(f"« {label} » enregistré pour {fr(name)} : {EFFECTS.get(feedback, 'merci !')}.",
+                 icon=icon)
 
 
 # ---------------------------------------------------------------------- main
@@ -84,9 +88,14 @@ with st.expander("Comment ça marche ?"):
         "2. Vérifie **tes contraintes** juste en dessous : elles viennent de ton profil, "
         "et tu peux les changer pour une seule recherche.\n"
         "3. Clique sur **Trouver des accords**.\n"
-        "4. Donne ton avis sur les suggestions (👍 👎 🚫 🍳) : il est enregistré et servira à "
-        "améliorer les recommandations. « 🚫 Pas pour moi » retire l'ingrédient de tes "
-        "prochaines suggestions."
+        "4. Donne ton avis sur les suggestions : il est pris en compte **dès ta prochaine "
+        "recherche**.\n"
+        "   - 👍 **J'aime** : l'ingrédient et ceux qui lui ressemblent remontent ;\n"
+        "   - 👎 **Je n'aime pas** : il ne t'est plus proposé ;\n"
+        "   - 🚫 **Pas avec ça** : il ne t'est plus proposé avec cette recherche-là ;\n"
+        "   - ⚠️ **Allergie** : ni lui ni ses variantes (ex. arachide → beurre de cacahuète) "
+        "ne te seront plus jamais proposés ;\n"
+        "   - 🍳 **Cuisiné** : compte comme un « J'aime », avec une note."
     )
 
 st.multiselect("Tes ingrédients", load_vocab(), key="ingredients", format_func=ingredient_label,
@@ -122,12 +131,10 @@ query = st.session_state.ingredients
 if st.button("🔍 Trouver des accords", type="primary", disabled=not query):
     try:
         with st.spinner("On cherche les meilleurs accords…"):
-            # Ask for extra results to make up for the disliked ingredients removed below.
-            # TODO: pass `exclude` to /recommend once the API supports it (HybridRanker does).
-            body, latency = api_client.recommend(query, auth.api_user_id(user),
-                                                 min(top_k + len(disliked), 50), allergies, diet,
-                                                 base_url=api_url())
-        recs = [r for r in body["recommendations"] if r["name"] not in set(disliked)][:top_k]
+            body, latency = api_client.recommend(
+                query, auth.log_user_id(user), top_k, allergies, diet, base_url=api_url(),
+                exclude=disliked, history_user_id=auth.history_user_id(user))
+        recs = body["recommendations"]
         st.session_state.results = {"body": body, "recs": recs, "latency": latency,
                                     "query": list(query), "allergies": allergies, "diet": diet}
     except api_client.APIError:
@@ -138,20 +145,30 @@ if not query:
 
 
 def score_breakdown(rec: dict) -> str:
-    """Coloured bar showing how much each component contributes to the score."""
+    """Coloured bar: where the pairing score comes from, then how much the user's taste moved it.
+
+    Mirrors HybridRanker: pairing = a*emb + b*chem + d*cooc, then score = pairing * (1 + g*pref)
+    (multiplicative) or pairing + g*pref (additive). The API does not return cooc_score, so the
+    co-occurrence part is what is left of the pairing score."""
+    if WEIGHTS.pref_mode == "multiplicative":
+        pairing = rec["score"] / (1.0 + WEIGHTS.gamma_pref * rec["pref_score"])
+    else:
+        pairing = rec["score"] - WEIGHTS.gamma_pref * rec["pref_score"]
     parts = {"emb": WEIGHTS.alpha_emb * rec["emb_score"],
-             "chem": WEIGHTS.beta_chem * rec["chem_score"],
-             "pref": WEIGHTS.gamma_pref * rec["pref_score"]}
-    parts = {k: max(v, 0.0) for k, v in parts.items()}
+             "chem": WEIGHTS.beta_chem * rec["chem_score"]}
+    parts["cooc"] = pairing - sum(parts.values())
+    parts = {k: max(parts[k], 0.0) for k in PARTS}
     total = sum(parts.values()) or 1.0
     segs = "".join(f'<div style="width:{100 * v / total:.1f}%;background:{PARTS[k][0]}"></div>'
                    for k, v in parts.items() if v > 0)
     legend = " &nbsp; ".join(
         f'<span style="color:{PARTS[k][0]}">●</span> {PARTS[k][1]} {100 * v / total:.0f} %'
-        for k, v in parts.items())
+        for k, v in parts.items() if v > 0)
+    taste = (rec["score"] - pairing) / pairing * 100 if pairing > 0 else 0.0
+    taste_txt = f" &nbsp;·&nbsp; 💙 tes goûts : {taste:+.0f} %" if abs(taste) >= 0.5 else ""
     return (f'<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;'
             f'background:rgba(128,128,128,.25);margin:2px 0 4px">{segs}</div>'
-            f'<div style="font-size:.85em;opacity:.8">{legend} &nbsp;·&nbsp; '
+            f'<div style="font-size:.85em;opacity:.8">{legend}{taste_txt} &nbsp;·&nbsp; '
             f'score {rec["score"]:.3f}</div>')
 
 
@@ -175,23 +192,32 @@ def render_card(rank: int, rec: dict, q: list[str], best: float, details: bool) 
             icon, label = FEEDBACK[given[0]]
             st.caption(f"{icon} Ton avis « {label} » est enregistré.")
             return
-        b = st.columns(5)
+        b = st.columns(6)
         b[0].button("👍 J'aime", key=f"like|{key}", on_click=send_feedback,
-                    args=(q, name, "like"), width="stretch")
-        b[1].button("👎 Bof", key=f"dislike|{key}", on_click=send_feedback,
-                    args=(q, name, "dislike"), width="stretch")
-        b[2].button("🚫 Pas pour moi", key=f"nfm|{key}", on_click=send_feedback,
+                    args=(q, name, "like"), width="stretch",
+                    help="Il remontera, ainsi que les ingrédients qui lui ressemblent")
+        b[1].button("👎 Je n'aime pas", key=f"dislike|{key}", on_click=send_feedback,
+                    args=(q, name, "dislike"), width="stretch",
+                    help="Il ne te sera plus proposé (quelle que soit la recherche)")
+        b[2].button("🚫 Pas avec ça", key=f"nfm|{key}", on_click=send_feedback,
                     args=(q, name, "not_for_me"), width="stretch",
-                    help="Je n'aime pas / je ne mange pas cet ingrédient : "
-                         "il ne me sera plus proposé")
-        with b[3].popover("🍳 Je l'ai cuisiné", width="stretch"):
+                    help="Bon ingrédient, mais pas avec cette recherche : il ne te sera plus "
+                         "proposé avec ces ingrédients-là")
+        with b[3].popover("⚠️ Allergie", width="stretch",
+                          help="Je suis allergique à cet ingrédient"):
+            st.markdown(f"**{fr(name).capitalize()}** et toutes ses variantes ne te seront "
+                        "**plus jamais** proposés, même si tu cliques ensuite sur 👍.")
+            st.caption("Tu pourras annuler depuis ton profil en cas d'erreur.")
+            st.button("Oui, j'y suis allergique", key=f"allergic|{key}", on_click=send_feedback,
+                      args=(q, name, "allergic"), type="primary")
+        with b[4].popover("🍳 Cuisiné", width="stretch"):
             st.text_area("Qu'as-tu préparé ?", key=f"note|{key}",
                          placeholder="Ex. saumon au four, sauce aneth et citron")
             st.button("Enregistrer", key=f"cooked|{key}", on_click=send_feedback,
                       args=(q, name, "cooked"), kwargs={"note_key": f"note|{key}"},
                       type="primary")
         if name not in st.session_state.ingredients:
-            b[4].button("➕ Ajouter à ma liste", key=f"add|{key}", on_click=add_to_query,
+            b[5].button("➕ Ajouter", key=f"add|{key}", on_click=add_to_query,
                         args=(name, q), width="stretch",
                         help="Ajoute cet ingrédient à ta recherche pour aller plus loin")
 
@@ -204,7 +230,14 @@ if res:
     head.markdown(f"### {len(recs)} suggestions pour {' + '.join(fr(i) for i in res['query'])}")
     info = []
     if user and user.food_com_id:
-        info.append("✨ personnalisé avec ton profil")
+        info.append("✨ personnalisé avec ton profil Food.com")
+    fb = res["body"].get("applied_feedback") or {}
+    n_fb = {k: len(fb.get(k) or []) for k in ("liked", "disliked", "allergic")}
+    if any(n_fb.values()):
+        info.append("🧠 tes avis sont pris en compte (" + ", ".join(
+            f"{n} {label}" for n, label in [(n_fb["liked"], "aimé(s)"),
+                                             (n_fb["disliked"], "écarté(s)"),
+                                             (n_fb["allergic"], "allergie(s)")] if n) + ")")
     head.caption(" · ".join(info + [f"réponse en {res['latency'] * 1000:.0f} ms"]))
     with side:
         mode_badge(res["body"].get("mock"))

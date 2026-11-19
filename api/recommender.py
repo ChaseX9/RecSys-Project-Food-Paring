@@ -134,10 +134,14 @@ class ModelRecommender:
             self.ing_comp = sp.load_npz(ic).tocsr()
 
     def recommend(self, ingredients, top_k=10, user_id=None, allergies=None, diet=None,
-                  liked=None, disliked=None, candidates=None) -> list[dict]:
+                  liked=None, disliked=None, candidates=None, exclude=None,
+                  history_user_id=None) -> list[dict]:
+        """``user_id`` is the account (feedback); ``history_user_id`` whose rating history
+        personalizes the ranking (defaults to ``user_id``). ``exclude``: never recommended."""
         from src.explain.reasons import attach_explanations
 
-        recs = self.ranker.recommend(ingredients, user_id=user_id, allergies=allergies, diet=diet,
+        recs = self.ranker.recommend(ingredients, user_id=history_user_id or user_id,
+                                     allergies=allergies, diet=diet, exclude=exclude,
                                      top_k=top_k, liked=liked, disliked=disliked,
                                      candidates=candidates)
         recs = attach_explanations(recs, ingredients, self.npmi, self.chemical,
