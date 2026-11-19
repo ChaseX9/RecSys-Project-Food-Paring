@@ -144,6 +144,10 @@ class ModelRecommender:
                        | {"explanation": expl, "feedback": r.get("feedback")})
         return out
 
+    def profile(self, user_id, liked=None, disliked=None, n: int = 10) -> dict:
+        """The user's preference profile (rating history updated with feedback)."""
+        return self.ranker.profile_summary(user_id, liked, disliked, n)
+
 
 def model_available(embeddings_path: str | Path = EMBEDDINGS_PATH) -> bool:
     return Path(embeddings_path).exists()
