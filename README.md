@@ -22,6 +22,58 @@ A recommender system that answers the everyday question *"I have X, what goes we
 - **Personalization:** user preference vector built from highly rated recipes.
 - **Explanations:** short reasons for each recommendation (e.g. frequently paired together, shared aromatic compounds).
 
+
+## Evaluation
+
+The evaluation harness (`src/eval/`) scores any recommender on held-out recipes and reports **NDCG@10**, **Recall@20**, HitRate@k and MRR.
+
+**Protocol: masked-ingredient completion.** For each held-out user → recipe interaction, about 20% of the recipe's ingredients are hidden (at least one). The remaining ingredients are the query, the hidden ones are the ground truth, and the user id is passed for personalization. Query ingredients are removed from every prediction before scoring.
+
+**No leakage.** By default (`protocol: unseen_recipes`) only recipes with **no train interaction** are evaluated, so the graph, NPMI, popularity and user profiles (all built on train recipes) have never seen them. A stricter recipe-level holdout (`protocol: recipe_holdout`) is also available; it requires the graph and model to be rebuilt without the held-out recipes (`src.eval.protocol.holdout_recipe_ids`, same `holdout_frac` and `seed`).
+
+Settings (protocol, split, share of hidden ingredients, k, seed, baselines) are in `configs/eval.yaml`.
+
+```bash
+# Baselines (random, popularity, co-occurrence) on the test split
+python scripts/evaluate.py
+
+# Validation split, for tuning
+python scripts/evaluate.py --split val
+
+# Add the trained model (after scripts/train_nlgcl.py)
+python scripts/evaluate.py --embeddings artifacts/ingredient_embeddings.npy
+```
+
+Results are printed and saved to `artifacts/eval/<protocol>_<split>.json`.
+
+From Python, mock or precomputed predictions can be scored directly:
+
+```python
+from src.eval.protocol import build_cases
+from src.eval.harness import evaluate_predictions
+
+setup = build_cases("data/processed", split="test")
+preds = {case_id: [12, 7, 40] for case_id in setup.cases.case_id}   # {case_id: ranked ingredient ids}
+print(evaluate_predictions(preds, setup.cases, ks=(10, 20)))         # {'ndcg@10': ..., 'recall@20': ..., ...}
+```
+
+Tests: `pytest tests/test_eval.py` (hand-computed metric values, mock predictions, anti-leakage checks).
+
+### Ablations
+
+`scripts/ablations.py` trains each model variant listed in `configs/ablations.yaml` and scores it, with each ranking variant, on the same cases as the baselines:
+
+- **Model:** NLGCL (reference) vs LightGCN (`lambda_cl = 0`, i.e. the innovation switched off), a stronger contrastive weight, and a graph built without chemical edges.
+- **Ranking:** full hybrid score vs no chemical score, no user preference, embedding only.
+- **Beyond accuracy (top-10):** catalog coverage, long-tail share, novelty, and `grounded@10`, the share of recommendations backed by a real explanation signal (strong NPMI with a query ingredient or shared aromatic compounds).
+
+```bash
+python scripts/ablations.py                    # val + test, about 15 min on CPU
+python scripts/ablations.py --max-cases 300    # quick run
+```
+
+Trained variants are cached in `artifacts/ablations/<variant>/` (use `--retrain` to retrain them). Tables are written to `artifacts/eval/ablations_unseen_recipes_<split>.{json,md}`. Pick settings on `val`, report `test`.
+
 ## Quick start
 
 1. Virtual Environment
@@ -32,7 +84,7 @@ python -m venv .venv
 
 # Linux or Mac
 python3 -m venv .venv
-source ./venv/bin/activate
+source ./.venv/bin/activate
 ```
 
 2. Install Dependences

@@ -1,0 +1,13 @@
+processed_dir: data/processed
+out_dir: artifacts/eval
+
+protocol: unseen_recipes   # unseen_recipes (a, default) | recipe_holdout (b, needs graph rebuilt with the same holdout)
+split: test                # val for tuning, test for the final numbers
+hidden_ratio: 0.2          # share of a recipe's ingredients hidden as ground truth (at least 1)
+min_query: 2               # minimum number of ingredients left in the query
+holdout_frac: 0.05         # recipe_holdout only: share of recipes held out (split in half between val and test)
+max_cases: null            # null = all cases
+seed: 42
+
+ks: [10, 20]               # report NDCG@10 and Recall@20 (plus the other k)
+baselines: [random, popularity, cooccurrence]
