@@ -19,3 +19,34 @@ garbanzo bean: chickpea
 capsicum: bell pepper
 garlic clove: garlic
 purple onion: red onion
+
+# duplicates found in the vocabulary (same product, different spelling / brand)
+tomato ketchup: ketchup
+catsup: ketchup
+egg tomato: plum tomato                # "egg tomatoes" is a plum tomato variety
+egg beaters egg substitute: egg substitute
+ener-g egg substitute: egg substitute
+flat leaf parsley: flat-leaf parsley
+italian parsley: flat-leaf parsley
+self raising flour: self-rising flour
+light-brown sugar: brown sugar         # "light brown sugar" -> "brown sugar" (light is a descriptor)
+cool whip topping: cool whip
+cool whip free: cool whip
+bisquick baking mix: bisquick
+converted brand rice: rice
+minute rice: rice
+minute white rice: white rice
+minute brown rice: brown rice
+# "ground X" for spices (ground ginger and ground beef stay separate)
+ground cinnamon: cinnamon
+ground cumin: cumin
+ground nutmeg: nutmeg
+ground paprika: paprika
+ground rosemary: rosemary
+ground oregano: oregano
+ground cayenne pepper: cayenne pepper
+ground black pepper: black pepper
+coarse ground black pepper: black pepper
+# created by the modifier stripping above ("low fat mozzarella", "light half & half cream")
+mozzarella: mozzarella cheese
+half half cream: half-and-half

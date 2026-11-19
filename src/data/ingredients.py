@@ -17,7 +17,22 @@ DESCRIPTORS = {
     "skinless", "lean", "thinly", "finely", "coarsely", "roughly", "ripe", "unsalted", "salted",
     "organic", "good", "quality", "pure", "real", "prepared", "drained", "rinsed", "peeled",
     "seeded", "cubed", "halved", "sifted", "toasted", "roasted",
+    "light", "lite", "lowfat", "nonfat", "jumbo",
 }
+
+# Multi-word modifiers that do not change the flavor (diet versions, cooking state).
+# "vegan" / "vegetarian" are NOT here: they change what the diet filter must do.
+_MODIFIER_PHRASES = re.compile(
+    r"\b(?:low[- ]?sodium|reduced[- ]sodium|no[- ]salt[- ]added|no[- ]added[- ]salt|fat[- ]free"
+    r"|low[- ]?fat|reduced[- ]fat|non[- ]?fat|reduced[- ]calorie|hard[- ](?:boiled|cooked))\b")
+
+# Brand names stripped from the start of an ingredient ("heinz ketchup" -> "ketchup").
+# Apostrophes are already turned into spaces ("hellmann's" -> "hellmann s").
+# Products that ARE the brand (cool whip, bisquick, tabasco, velveeta) are not listed.
+_BRANDS = ("hellmann s", "hellmanns", "best foods", "heinz", "kikkoman", "philadelphia",
+           "lea perrins", "grey poupon", "gold medal", "swanson", "hunt s", "hunts", "ragu",
+           "planters", "nestle", "uncle ben s", "uncle bens")
+_BRAND_PREFIX = re.compile(r"^(?:" + "|".join(re.escape(b) for b in _BRANDS) + r")\s+")
 
 _IRREGULAR = {"leaves": "leaf", "halves": "half", "loaves": "loaf", "tomatoes": "tomato",
               "potatoes": "potato", "mangoes": "mango", "avocados": "avocado"}
@@ -59,6 +74,9 @@ def normalize_ingredient(raw: str, aliases: dict[str, str] | None = None) -> str
     text = _PAREN.sub(" ", text)
     text = text.split(",")[0]  # "lemons, rind of" -> "lemons"
     text = _NON_ALPHA.sub(" ", text)
+    text = " ".join(text.split())
+    text = _MODIFIER_PHRASES.sub(" ", text).strip()
+    text = _BRAND_PREFIX.sub("", " ".join(text.split()))
     tokens = [t.strip("-") for t in text.split()]
     tokens = [t for t in tokens if t and t not in DESCRIPTORS]
     if not tokens:
