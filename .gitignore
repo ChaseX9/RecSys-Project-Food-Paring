@@ -16,6 +16,10 @@ data/raw/*
 !data/raw/.gitkeep
 data/app.db
 
-# Trained models
+# Trained models: only the served model is versioned (668 KB), so a fresh clone runs the real
+# model without training. Retrain + commit it whenever data/processed/ingredients_vocab.csv changes
+# (tests/test_artifacts.py fails otherwise). Checkpoints, ablations and eval outputs stay local.
 artifacts/*
 !artifacts/.gitkeep
+!artifacts/ingredient_embeddings.npy
+!artifacts/train_meta.json

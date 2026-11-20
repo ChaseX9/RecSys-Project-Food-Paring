@@ -1,3 +1,5 @@
+# Run the app (API + Streamlit) and the tests. No PyTorch needed: the trained model is
+# versioned in artifacts/. To retrain or rebuild, also install requirements-train.txt.
 numpy>=1.26
 pandas>=2.2
 pyarrow>=15
@@ -6,8 +8,5 @@ pyyaml>=6.0
 fastapi>=0.110
 uvicorn>=0.29
 httpx>=0.27
-pytest>=8.0
-torch>=2.0
 streamlit>=1.44
-tqdm>=4.66
-matplotlib>=3.8
+pytest>=8.0

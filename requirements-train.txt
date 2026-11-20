@@ -1,0 +1,4 @@
+# Training NLGCL, ablations and training plots (on top of requirements.txt).
+-r requirements.txt
+torch>=2.0
+matplotlib>=3.8
