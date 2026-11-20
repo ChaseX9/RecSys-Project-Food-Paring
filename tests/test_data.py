@@ -99,3 +99,29 @@ def test_train_recipe_mask_excludes_val_test_only_recipes():
     # recipe 2 only appears in validation -> must not be used for graph statistics
     assert marked["is_train_recipe"].tolist() == [True, False, True]
     assert "is_train_recipe" not in recipes.columns  # input untouched
+
+
+def test_duplicate_ingredients_are_merged():
+    from src.data.ingredients import load_aliases
+    aliases = load_aliases("configs/ingredient_aliases.yaml")
+    merged = {
+        "Heinz Ketchup": "ketchup", "tomato ketchup": "ketchup", "catsup": "ketchup",
+        "no-salt-added ketchup": "ketchup", "Hellmann's Mayonnaise": "mayonnaise",
+        "Lea & Perrins Worcestershire Sauce": "worcestershire sauce",
+        "Fat-Free Cream Cheese": "cream cheese", "low sodium soy sauce": "soy sauce",
+        "hard-boiled eggs": "egg", "jumbo eggs": "egg", "egg tomatoes": "plum tomato",
+        "Egg Beaters Egg Substitute": "egg substitute", "ground cinnamon": "cinnamon",
+        "flat leaf parsley": "flat-leaf parsley", "self raising flour": "self-rising flour",
+        "Cool Whip Lite": "cool whip", "fat free cool whip": "cool whip",
+        "low fat mozzarella": "mozzarella cheese",
+    }
+    for raw, expected in merged.items():
+        assert normalize_ingredient(raw, aliases) == expected, raw
+
+
+def test_distinct_ingredients_are_not_merged():
+    from src.data.ingredients import load_aliases
+    aliases = load_aliases("configs/ingredient_aliases.yaml")
+    for raw in ["eggplant", "egg substitute", "ground ginger", "ground beef", "dark brown sugar",
+                "vegan butter", "vegetarian worcestershire sauce", "tabasco sauce"]:
+        assert normalize_ingredient(raw, aliases) == raw, raw

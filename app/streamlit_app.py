@@ -50,7 +50,16 @@ nav = st.navigation([P[k] for k in visible], position="hidden")
 st.session_state.page_changed = st.session_state.get("current_page") != nav.url_path
 st.session_state.current_page = nav.url_path
 
-# First login: send the user once to the recipe ratings, so the model learns their taste.
+# Just signed up: go straight to the profile so allergies and diet are filled in first
+# (the recipe-rating onboarding then respects them).
+if user and st.session_state.get("onboarding") and "profil" in visible:
+    st.session_state.onboarding_banner = True
+    st.session_state.onboarding_redirected = True
+    st.session_state.pop("onboarding")
+    st.switch_page(P["profil"])
+
+# Later logins until onboarding is done: send the user once to the recipe ratings,
+# so the model learns their taste.
 if user and not user.onboarding_done and not st.session_state.get("onboarding_redirected"):
     st.session_state.onboarding_redirected = True
     st.session_state.flash = ("Bienvenue ! Note quelques recettes pour que les suggestions "

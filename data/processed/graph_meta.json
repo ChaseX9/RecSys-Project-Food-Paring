@@ -1,7 +1,7 @@
 {
-  "n_ingredients": 2609,
-  "n_edges": 72127,
-  "npmi_nnz": 291650,
+  "n_ingredients": 2426,
+  "n_edges": 67484,
+  "npmi_nnz": 260956,
   "chemical_nnz": 63590,
   "alpha": 0.7,
   "top_k": 50

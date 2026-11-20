@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,10 +93,23 @@ def fr(name: str) -> str:
     return load_translations().get(name, name)
 
 
+def fold(text: str) -> str:
+    """Lowercase without accents, ligatures spelled out: "Œuf" -> "oeuf", "épinard" -> "epinard"."""
+    text = text.lower().replace("œ", "oe").replace("æ", "ae")
+    return "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c))
+
+
 def ingredient_label(name: str) -> str:
-    """Label for the search box: French first, English in brackets so both can be typed."""
+    """Label for the search box: French first, English in brackets so both can be typed.
+
+    The box only matches the typed text against this label (plain substring, accents
+    matter), so the accent-free spelling is added when it differs: "oeuf" finds "œuf".
+    """
     tr = load_translations().get(name)
-    return f"{tr} ({name})" if tr and tr != name else name
+    if not tr or tr == name:
+        return name
+    plain = fold(tr)
+    return f"{tr} ({name}, {plain})" if plain != tr.lower() else f"{tr} ({name})"
 
 
 @st.cache_data
