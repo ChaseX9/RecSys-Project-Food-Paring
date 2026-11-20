@@ -34,6 +34,11 @@ head.title(f"👤 {user.display_name}")
 head.caption(f"@{user.username} · {auth.ROLES[user.role]} · membre depuis le "
              f"{fmt_date(user.created_at)[:10]} · dernière connexion le {fmt_date(user.last_login)}")
 
+if st.session_state.pop("onboarding_banner", False):
+    st.info("👋 **Dernière étape :** indique tes **allergies** et ton **régime** ci-dessous. "
+            "Elles seront appliquées à toutes tes recherches : les ingrédients incompatibles "
+            "ne te seront jamais proposés. Tu pourras les modifier à tout moment.")
+
 t_food, t_learned, t_perso, t_info, t_security = st.tabs(
     ["🥗 Préférences alimentaires", "🧠 Ce que le modèle sait de toi", "✨ Personnalisation",
      "📇 Informations", "🔒 Sécurité"])

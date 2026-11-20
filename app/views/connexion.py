@@ -54,8 +54,8 @@ with form_col:
                 try:
                     auth.register(new_user, display, email, pw, pw2)
                     u = auth.login(new_user, pw)
-                    st.session_state.flash = (f"Compte créé, bienvenue {u.display_name} ! "
-                                              "Pense à remplir ton profil (régime, allergies).")
+                    st.session_state.flash = f"Compte créé, bienvenue {u.display_name} ! 🎉"
+                    st.session_state.onboarding = True  # first stop: the profile (allergies)
                     st.rerun()
                 except auth.AuthError as e:
                     st.error(str(e))
