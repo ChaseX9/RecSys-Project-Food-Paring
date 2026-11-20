@@ -44,26 +44,27 @@ def main():
     env = os.environ | {"FOODPAIRING_API_URL": api_url}
     procs = []
     try:
-        print(f"Starting the API on {api_url} (loading the model and the recipes)...")
+        print(f"Starting the API on {api_url} (loading the model and the recipes)...", flush=True)
         api = subprocess.Popen([sys.executable, "-m", "uvicorn", "api.main:app",
                                 "--host", "127.0.0.1", "--port", str(args.api_port)], cwd=ROOT, env=env)
         procs.append(api)
         health = wait_for_api(api_url, api)
         model = health.get("model")
         print(f"API ready: model = {model}"
-              + ("" if model == "nlgcl" else "  (MOCK: artifacts/ingredient_embeddings.npy missing?)"))
+              + ("" if model == "nlgcl" else "  (MOCK: artifacts/ingredient_embeddings.npy missing?)"),
+              flush=True)
 
-        print(f"Starting the app on http://localhost:{args.ui_port} ...")
+        print(f"Starting the app on http://localhost:{args.ui_port} ...", flush=True)
         procs.append(subprocess.Popen([sys.executable, "-m", "streamlit", "run", "app/streamlit_app.py",
                                        "--server.port", str(args.ui_port), "--server.headless", "true"],
                                       cwd=ROOT, env=env))
         print(f"\n  Open http://localhost:{args.ui_port}  (demo account: demo / demo1234)"
-              "\n  Ctrl+C to stop.\n")
+              "\n  Ctrl+C to stop.\n", flush=True)
         while all(pr.poll() is None for pr in procs):
             time.sleep(1)
         raise SystemExit("A process stopped; see the error above.")
     except KeyboardInterrupt:
-        print("\nStopping...")
+        print("\nStopping...", flush=True)
     finally:
         for pr in procs:
             if pr.poll() is None:
