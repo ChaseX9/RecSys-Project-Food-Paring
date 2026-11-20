@@ -116,11 +116,16 @@ Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingre
 
 `/recommend` serves the trained model when `artifacts/ingredient_embeddings.npy` exists (`"mock": false`, check `GET /health`), and falls back to the mock otherwise or with `FOODPAIRING_MOCK=1`.
 
-## Quick start
+## Quick start: run the app (about 5 minutes)
 
-1. Virtual Environment
+Needs Python 3.10+ and git. Nothing to download or train: the processed data (`data/processed/`) and the trained model (`artifacts/ingredient_embeddings.npy`) are in the repo.
+
+1. Clone and create a virtual environment
 ```bash
-# Windows
+git clone https://github.com/ChaseX9/RecSys-Project-Food-Paring.git
+cd RecSys-Project-Food-Paring
+
+# Windows (PowerShell)
 python -m venv .venv
 .\.venv\Scripts\activate
 
@@ -129,17 +134,34 @@ python3 -m venv .venv
 source ./.venv/bin/activate
 ```
 
-2. Install Dependences
+2. Install the dependencies (no PyTorch needed to run the app)
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Build ingredient graph (NPMI + chemical)
+3. Start the API and the app with one command
+```bash
+python scripts/run_app.py
+```
+Open http://localhost:8501 and log in with `demo` / `demo1234` (or `admin` / `admin1234`, or "Continuer sans compte"). The terminal must show `API ready: model = nlgcl` (the real model, not the mock). `Ctrl+C` stops everything. If a port is taken: `python scripts/run_app.py --api-port 8010 --ui-port 8510`.
+
+4. Check (optional): `pytest` (all tests, about 8 min) or `pytest tests/test_artifacts.py tests/test_api.py` (1 min).
+
+## Rebuild and retrain (optional)
+
+Only needed to change the data or the model. Install the training dependencies first:
+```bash
+pip install -r requirements-train.txt
+```
+
+1. Build ingredient graph (NPMI + chemical)
 ```bash
 python scripts/build_graph.py
 ```
 
-4. Train NLGCL embeddings (CPU is fine for 2.6k nodes, about 8 min)
+2. Train NLGCL embeddings (CPU, about 20 min)
+
+**Whenever `data/processed/ingredients_vocab.csv` changes, retrain and commit `artifacts/ingredient_embeddings.npy` and `artifacts/train_meta.json`**: an out-of-date model stops the API at startup with an explicit message, and `tests/test_artifacts.py` fails.
 ```bash
 python scripts/train_nlgcl.py                 # settings from configs/model.yaml
 python scripts/train_nlgcl.py --device cuda   # GPU
@@ -152,14 +174,16 @@ Plot the training / validation curves:
 python scripts/plot_training.py               # -> artifacts/training_curves.png
 ```
 
-5. Recommend
+3. Recommend from the command line
 ```bash
 python scripts/recommend.py salmon lemon --top-k 10
 python scripts/recommend.py chicken --allergies gluten dairy --diet vegetarian
 python scripts/recommend.py tomato basil --user-id 12345
 ```
 
-6. Web interface (two terminals, from the repo root)
+## Web interface
+
+`python scripts/run_app.py` starts both parts. To run them separately (two terminals, from the repo root):
 ```bash
 uvicorn api.main:app                 # API on http://localhost:8000
 streamlit run app/streamlit_app.py   # UI on http://localhost:8501

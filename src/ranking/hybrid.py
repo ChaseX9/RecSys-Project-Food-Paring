@@ -521,6 +521,12 @@ def load_ranker(
     processed_dir = Path(processed_dir)
     emb = np.load(embedding_path)
     vocab = pd.read_csv(processed_dir / "ingredients_vocab.csv")
+    if emb.shape[0] != len(vocab):
+        # Happens after a data rebuild changed the vocabulary: the model must be retrained.
+        raise ValueError(
+            f"{embedding_path} has {emb.shape[0]} ingredients but "
+            f"{processed_dir / 'ingredients_vocab.csv'} has {len(vocab)}: the model is out of date. "
+            "Retrain it with `python scripts/train_nlgcl.py` (then commit artifacts/ingredient_embeddings.npy).")
     chem = None
     chem_path = processed_dir / "chemical_similarity.npz"
     if chem_path.exists():
