@@ -100,6 +100,18 @@ with st.expander("Comment ça marche ?"):
 
 st.multiselect("Tes ingrédients", load_vocab(), key="ingredients", format_func=ingredient_label,
                placeholder="Ex. saumon, tomate, chocolat…")
+
+
+def query_strip(names: list[str], size: int = 44) -> str:
+    """Row of ingredient thumbnails with their names, for the ingredients being searched."""
+    items = "".join(
+        f"<span style='display:inline-flex;align-items:center;margin:0 1rem .3rem 0'>"
+        f"{ingredient_img(n, size)}<span>{fr(n).capitalize()}</span></span>" for n in names)
+    return f"<div style='display:flex;flex-wrap:wrap;align-items:center'>{items}</div>"
+
+
+if st.session_state.ingredients:
+    st.markdown(query_strip(st.session_state.ingredients), unsafe_allow_html=True)
 ex_cols = st.columns([1.2] + [1] * len(EXAMPLES))
 ex_cols[0].markdown("Idées :")
 for col, (label, ings) in zip(ex_cols[1:], EXAMPLES.items()):
@@ -183,7 +195,7 @@ def render_card(rank: int, rec: dict, q: list[str], best: float, details: bool) 
         title.markdown(f"#### {ingredient_img(name, 48)}{rank}. {fr(name).capitalize()}{english}",
                        unsafe_allow_html=True)
         level = max(0.0, min(1.0, rec["score"] / best)) if best > 0 else 0.0
-        match.progress(level, text="Niveau d'accord")
+        match.progress(level, text=f"Niveau d'accord : {level * 100:.0f} %")
         st.markdown(f"💡 {explanation_fr(rec['explanation'])}")
         if details:
             st.markdown(score_breakdown(rec), unsafe_allow_html=True)
@@ -227,7 +239,8 @@ if res:
     recs = res["recs"]
     st.divider()
     head, side = st.columns([4, 1], vertical_alignment="center")
-    head.markdown(f"### {len(recs)} suggestions pour {' + '.join(fr(i) for i in res['query'])}")
+    head.markdown(f"### {len(recs)} suggestions pour")
+    head.markdown(query_strip(res["query"], 40), unsafe_allow_html=True)
     info = []
     if user and user.food_com_id:
         info.append("✨ personnalisé avec ton profil Food.com")
