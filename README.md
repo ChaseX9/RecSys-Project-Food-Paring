@@ -147,6 +147,26 @@ Open http://localhost:8501 and log in with `demo` / `demo1234` (or `admin` / `ad
 
 4. Check (optional): `pytest` (all tests, about 8 min) or `pytest tests/test_artifacts.py tests/test_api.py` (1 min).
 
+### Showcase: share the app on the local network
+
+Free, no cloud account: one laptop serves the app, every phone or laptop on the **same Wi-Fi** opens it.
+```bash
+python scripts/run_app.py --lan
+```
+The terminal prints `Showcase URL (same Wi-Fi): http://<laptop IP>:8501` and saves a QR code of it to
+`artifacts/showcase_qr.png` (show it on the stand). Visitors scan it and pick "Continuer sans compte":
+each guest gets their own profile.
+
+- **Only the app is exposed.** The Streamlit app listens on `0.0.0.0`; the API stays on `127.0.0.1`
+  (it has no authentication of its own), and the app calls it locally.
+- **Windows firewall:** on the first `--lan` start, allow Python in the popup (tick Private *and*
+  Public, school Wi-Fi is often classified Public). If the popup was dismissed, as admin:
+  `netsh advfirewall firewall add rule name=FoodPairing dir=in action=allow protocol=TCP localport=8501`.
+- **School Wi-Fi that blocks device-to-device traffic** (eduroam and many guest networks do): the URL
+  answers on the laptop but not on phones. Use a **phone hotspot** instead: connect the laptop and the
+  visitors to it and restart with `--lan` (the IP changes, so does the QR code).
+- **Wrong IP shown** (VPN, Ethernet + Wi-Fi): `python scripts/run_app.py --lan --ip 192.168.1.10`.
+
 ## Rebuild and retrain (optional)
 
 Only needed to change the data or the model. Install the training dependencies first:

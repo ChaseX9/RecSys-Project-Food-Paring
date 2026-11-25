@@ -3,6 +3,11 @@
 
     python scripts/run_app.py                      # API on :8000, app on :8501
     python scripts/run_app.py --api-port 8010 --ui-port 8510
+    python scripts/run_app.py --lan                # showcase: app reachable from the same Wi-Fi
+
+With --lan, only the Streamlit app listens on the network (0.0.0.0); the API stays on 127.0.0.1
+because it has no authentication of its own. The script prints http://<this laptop's IP>:<ui-port>
+and saves a QR code to artifacts/showcase_qr.png for visitors' phones.
 
 Ctrl+C stops both. Uses the current Python (run it from the activated virtual environment).
 """
@@ -11,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import socket
 import subprocess
 import sys
 import time
@@ -34,10 +40,44 @@ def wait_for_api(url: str, proc: subprocess.Popen, timeout: float = 120) -> dict
     raise SystemExit(f"The API did not answer on {url} within {timeout:.0f} s.")
 
 
+def lan_ip() -> str:
+    """IP of the interface that reaches the network (no packet is sent: UDP connect only picks a route)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        try:
+            s.connect(("10.255.255.255", 1))
+            return s.getsockname()[0]
+        except OSError:
+            return socket.gethostbyname(socket.gethostname())
+
+
+def show_lan_access(url: str) -> None:
+    """Print the URL to give visitors and save it as a QR code (artifacts/showcase_qr.png)."""
+    print(f"\n  Showcase URL (same Wi-Fi): {url}", flush=True)
+    if url.split("//")[1].startswith("127."):
+        print("  WARNING: no network found (127.x). Connect to the Wi-Fi or a phone hotspot first.", flush=True)
+    try:
+        import segno
+    except ImportError:
+        print("  (pip install segno to also get a QR code)", flush=True)
+        return
+    qr = segno.make(url, error="m")
+    path = ROOT / "artifacts" / "showcase_qr.png"
+    path.parent.mkdir(exist_ok=True)
+    qr.save(path, scale=12, border=2)
+    print(f"  QR code saved to {path.relative_to(ROOT)} (show it on the stand)", flush=True)
+    if sys.platform == "win32":
+        print("  If other devices cannot connect: allow Python in the Windows firewall popup (tick both\n"
+              "  Private and Public), or as admin: netsh advfirewall firewall add rule name=FoodPairing"
+              f" dir=in action=allow protocol=TCP localport={url.rsplit(':', 1)[1]}", flush=True)
+
+
 def main():
     p = argparse.ArgumentParser(description="Run the Food Pairing API and Streamlit app")
     p.add_argument("--api-port", type=int, default=8000)
     p.add_argument("--ui-port", type=int, default=8501)
+    p.add_argument("--lan", action="store_true",
+                   help="make the app reachable from other devices on the same network (showcase)")
+    p.add_argument("--ip", help="with --lan: IP to advertise, if the detected one is wrong (VPN, several networks)")
     args = p.parse_args()
 
     api_url = f"http://127.0.0.1:{args.api_port}"
@@ -55,11 +95,15 @@ def main():
               flush=True)
 
         print(f"Starting the app on http://localhost:{args.ui_port} ...", flush=True)
-        procs.append(subprocess.Popen([sys.executable, "-m", "streamlit", "run", "app/streamlit_app.py",
-                                       "--server.port", str(args.ui_port), "--server.headless", "true"],
-                                      cwd=ROOT, env=env))
-        print(f"\n  Open http://localhost:{args.ui_port}  (demo account: demo / demo1234)"
-              "\n  Ctrl+C to stop.\n", flush=True)
+        ui_cmd = [sys.executable, "-m", "streamlit", "run", "app/streamlit_app.py",
+                  "--server.port", str(args.ui_port), "--server.headless", "true"]
+        if args.lan:
+            ui_cmd += ["--server.address", "0.0.0.0"]
+        procs.append(subprocess.Popen(ui_cmd, cwd=ROOT, env=env))
+        print(f"\n  Open http://localhost:{args.ui_port}  (demo account: demo / demo1234)", flush=True)
+        if args.lan:
+            show_lan_access(f"http://{args.ip or lan_ip()}:{args.ui_port}")
+        print("\n  Ctrl+C to stop.\n", flush=True)
         while all(pr.poll() is None for pr in procs):
             time.sleep(1)
         raise SystemExit("A process stopped; see the error above.")
