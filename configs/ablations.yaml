@@ -23,7 +23,7 @@ rank_variants:
   no_cooc: {delta_cooc: 0.0}
   no_chem: {beta_chem: 0.0}
   with_pref: {gamma_pref: 0.1}      # personalization switched on
-  model_led: {alpha_emb: 0.6, beta_chem: 0.25, gamma_pref: 0.15, delta_cooc: 0.0, emb_similarity: dot}
+  model_led: {alpha_emb: 0.5, delta_cooc: 0.5}   # embedding weighs as much as co-occurrence (best such point on val, scripts/tune_ranking.py)
   emb_only: {alpha_emb: 1.0, beta_chem: 0.0, gamma_pref: 0.0, delta_cooc: 0.0, emb_similarity: dot}
 
 # Beyond-accuracy metrics (computed on the top-k lists)

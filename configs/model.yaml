@@ -26,7 +26,9 @@ train:
 # Weights chosen on the val split (grid search), never on test.
 ranking:
   alpha_emb: 0.35       # NLGCL embedding similarity
-  beta_chem: 0.1        # shared aromatic compounds (FlavorGraph)
+  beta_chem: 0.025      # shared aromatic compounds (FlavorGraph). Every beta > 0 costs NDCG on val
+                        # (0.1: 0.2985, 0.025: 0.3134, 0: 0.3159); 0.025 = best val NDCG with chemistry
+                        # kept, for explanations and grounded@10 (scripts/tune_ranking.py)
   gamma_pref: 0.2       # user taste profile (product choice: personalization on)
   pref_source: rating   # profile from ratings 1-5 (centered, shrunk), see src/data/rating_profiles.py
   pref_mode: multiplicative   # preference only re-orders plausible pairings
