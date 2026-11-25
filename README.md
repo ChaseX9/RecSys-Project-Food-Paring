@@ -74,6 +74,29 @@ python scripts/ablations.py --max-cases 300    # quick run
 
 Trained variants are cached in `artifacts/ablations/<variant>/` (use `--retrain` to retrain them). Tables are written to `artifacts/eval/ablations_unseen_recipes_<split>.{json,md}`. Pick settings on `val`, report `test`.
 
+### Ranking weights
+
+`scripts/tune_ranking.py` grid-searches the hybrid weights on **val** (1,630 points: embedding, chemistry, co-occurrence, cosine or dot, for NLGCL and LightGCN), then prints **test** for the chosen points only. Each case's score components are computed once and every weight set is scored with numpy, which takes about 10 min instead of hours. At startup it checks that its NDCG@10 matches the real harness. Results are written to `artifacts/eval/tune_ranking.{json,md}`.
+
+NDCG@10, NLGCL, served personalization (`gamma_pref = 0.2`):
+
+| ranking | alpha | beta (chem) | delta (cooc) | val | test |
+|---|---:|---:|---:|---:|---:|
+| previous served | 0.35 | 0.1 | 0.7 | 0.2985 | 0.2995 |
+| **served now** | 0.35 | **0.025** | 0.7 | **0.3134** | **0.3168** |
+| no chemistry | 0.35 | 0 | 0.7 | 0.3159 | 0.3190 |
+| model-led (alpha = delta) | 0.5 | 0.025 | 0.5 | 0.3001 | 0.3001 |
+| embedding alone (dot) | 1 | 0 | 0 | 0.2342 | 0.2352 |
+
+- **Chemistry:** every `beta > 0` lowers NDCG on val, steadily (0.1: 0.2985, 0.05: 0.3106, 0.025: 0.3134, 0: 0.3159). FlavorGraph's shared compounds are not what Food.com recipes put together. We keep `beta = 0.025`, the best val point with chemistry on. It gets 5 % more NDCG than before and loses 0.8 % against no chemistry. In exchange it keeps grounded@10 at 0.925 (0.916 without chemistry) and keeps the "shared aromatic compounds" explanation in the app.
+- **Model-led hybrid:** we tested whether giving the embedding at least as much weight as co-occurrence would carry NLGCL's gain into the served ranking. It does not. The best model-led point (0.3001 to 0.3023 on val) stays below the co-occurrence-led hybrid. NLGCL beats LightGCN on the embedding alone (val 0.2342 vs 0.1974, +19 %), but LightGCN is slightly ahead in every hybrid (best val 0.3250 vs 0.3173). Co-occurrence already gives the hybrid the frequency signal that LightGCN's embedding adds. NLGCL's contrastive term spreads the embedding toward rarer ingredients, and in the hybrid that spread is redundant or counts against it. We keep NLGCL as the served encoder because its embedding is better on its own, and the embedding drives cold queries, feedback neighbours and "close to X" explanations.
+- No model change: same vocabulary, same `artifacts/ingredient_embeddings.npy`, no retraining needed.
+
+```bash
+python scripts/tune_ranking.py                    # full grid, about 10 min on CPU
+python scripts/tune_ranking.py --max-cases 300    # quick run
+```
+
 ### Personalization (ratings 1-5)
 
 User profiles use **every train rating**, not only the 5/5 ones (`src/data/rating_profiles.py`):
