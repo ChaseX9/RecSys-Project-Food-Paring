@@ -190,6 +190,15 @@ each guest gets their own profile.
   visitors to it and restart with `--lan` (the IP changes, so does the QR code).
 - **Wrong IP shown** (VPN, Ethernet + Wi-Fi): `python scripts/run_app.py --lan --ip 192.168.1.10`.
 
+### Demo rehearsal
+
+`scripts/demo_check.py` replays the live demo on the API and checks that each effect shows. A new user asks what goes with chicken, then likes thyme. Thyme jumps to the top, and so do parsley and rosemary ("close to thyme, which you liked"). The like carries over to lamb. A dislike of butter removes it from every dish. A walnut allergy bans walnut products on every query, and "not allergic" lifts it. Each step prints what the audience sees (French names, as in the app) followed by PASS or FAIL. Run it after any change to the model or the weights, and before the showcase:
+```bash
+python scripts/demo_check.py                                  # in-process API, temporary DB (~30 s)
+python scripts/demo_check.py --api-url http://127.0.0.1:8000  # the API started by run_app.py
+```
+It needs neither a browser nor a network, so it is also the plan B if the app cannot be shown. It runs as a fresh `demo-check-xxxx` user and never touches real accounts.
+
 ## Rebuild and retrain (optional)
 
 Only needed to change the data or the model. Install the training dependencies first:
