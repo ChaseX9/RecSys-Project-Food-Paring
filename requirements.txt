@@ -9,4 +9,5 @@ fastapi>=0.110
 uvicorn>=0.29
 httpx>=0.27
 streamlit>=1.44
+segno>=1.6          # QR code of the showcase URL (scripts/run_app.py --lan)
 pytest>=8.0
