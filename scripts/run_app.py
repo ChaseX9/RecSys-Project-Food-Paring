@@ -40,6 +40,34 @@ def wait_for_api(url: str, proc: subprocess.Popen, timeout: float = 120) -> dict
     raise SystemExit(f"The API did not answer on {url} within {timeout:.0f} s.")
 
 
+def port_in_use(port: int) -> bool:
+    """True if something already listens on this port, on IPv4 *or* IPv6.
+
+    Windows lets two programs listen on the same port when one binds IPv6 (::) and the other
+    IPv4 (0.0.0.0): uvicorn/streamlit start without error, and visitors may land on the other
+    program. So we connect instead of relying on a bind error."""
+    for family, host in ((socket.AF_INET, "127.0.0.1"), (socket.AF_INET6, "::1")):
+        try:
+            with socket.socket(family, socket.SOCK_STREAM) as s:
+                s.settimeout(0.3)
+                if s.connect_ex((host, port)) == 0:
+                    return True
+        except OSError:  # no IPv6 on this machine
+            pass
+    return False
+
+
+def free_port(port: int, name: str, tries: int = 50) -> int:
+    """``port`` if free, else the next free one (and say so)."""
+    for p in range(port, port + tries):
+        if not port_in_use(p):
+            if p != port:
+                print(f"Port {port} is already used by another program: the {name} uses port {p} instead.",
+                      flush=True)
+            return p
+    raise SystemExit(f"No free port for the {name} between {port} and {port + tries - 1}.")
+
+
 def lan_ip() -> str:
     """IP of the interface that reaches the network (no packet is sent: UDP connect only picks a route)."""
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -79,6 +107,8 @@ def main():
                    help="make the app reachable from other devices on the same network (showcase)")
     p.add_argument("--ip", help="with --lan: IP to advertise, if the detected one is wrong (VPN, several networks)")
     args = p.parse_args()
+    args.api_port = free_port(args.api_port, "API")
+    args.ui_port = free_port(args.ui_port, "app")
 
     api_url = f"http://127.0.0.1:{args.api_port}"
     env = os.environ | {"FOODPAIRING_API_URL": api_url}

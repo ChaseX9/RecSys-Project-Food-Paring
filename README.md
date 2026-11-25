@@ -143,7 +143,7 @@ pip install -r requirements.txt
 ```bash
 python scripts/run_app.py
 ```
-Open http://localhost:8501 and log in with `demo` / `demo1234` (or `admin` / `admin1234`, or "Continuer sans compte"). The terminal must show `API ready: model = nlgcl` (the real model, not the mock). `Ctrl+C` stops everything. If a port is taken: `python scripts/run_app.py --api-port 8010 --ui-port 8510`.
+Open http://localhost:8501 and log in with `demo` / `demo1234` (or `admin` / `admin1234`, or "Continuer sans compte"). The terminal must show `API ready: model = nlgcl` (the real model, not the mock). `Ctrl+C` stops everything. If a port is already used by another program (another Streamlit app on 8501, an API on 8000...), the script takes the next free one and says so: open the URL it prints. To choose: `python scripts/run_app.py --api-port 8010 --ui-port 8510`.
 
 4. Check (optional): `pytest` (all tests, about 8 min) or `pytest tests/test_artifacts.py tests/test_api.py` (1 min).
 

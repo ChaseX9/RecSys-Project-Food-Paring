@@ -13,6 +13,24 @@ def test_lan_ip_is_an_ipv4_address():
     assert ipaddress.ip_address(run_app.lan_ip()).version == 4
 
 
+def test_free_port_skips_a_port_already_listened_on_ipv6():
+    """The case that sent the showcase QR code to another project: a Streamlit app on [::]:port."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.bind(("::", 0))
+    except OSError:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # no IPv6: check IPv4 instead
+        s.bind(("127.0.0.1", 0))
+    s.listen()
+    taken = s.getsockname()[1]
+    try:
+        assert run_app.port_in_use(taken)
+        assert run_app.free_port(taken, "app") != taken
+    finally:
+        s.close()
+
+
 def test_show_lan_access_writes_the_qr_code(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(run_app, "ROOT", tmp_path)
     run_app.show_lan_access("http://192.168.1.10:8501")
