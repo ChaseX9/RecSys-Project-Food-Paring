@@ -6,64 +6,66 @@ from datetime import datetime
 import streamlit as st
 
 from app import api_client, auth
+from app.i18n import t
 from app.common import (ALLERGIES, API_DOWN_MSG, DIET_LABELS, DIETS, PROFILE_QUERY, api_url,
                         food_com_label, fr, ingredient_img, ingredient_label, load_demo_users,
                         load_vocab)
 
 user = auth.current_user()
 if user is None:  # guests never see this page in the menu, but a stale URL could land here
-    st.warning("Connecte-toi pour accéder à ton profil.")
+    st.warning(t("Connecte-toi pour accéder à ton profil."))
     st.stop()
 
 
 def fmt_date(iso: str | None) -> str:
-    return datetime.fromisoformat(iso).astimezone().strftime("%d/%m/%Y à %H:%M") if iso else "—"
+    return datetime.fromisoformat(iso).astimezone().strftime(t("%d/%m/%Y à %H:%M")) if iso else "—"
 
 
 def save(**changes) -> None:
     try:
         auth.update_profile(user.username, **changes)
-        st.session_state.flash = "Modifications enregistrées ✅"
+        st.session_state.flash = t("Modifications enregistrées ✅")
         st.rerun()
     except auth.AuthError as e:
-        st.error(str(e))
+        st.error(t(str(e)))
 
 
 head, badge = st.columns([4, 1], vertical_alignment="center")
 head.title(f"👤 {user.display_name}")
-head.caption(f"@{user.username} · {auth.ROLES[user.role]} · membre depuis le "
-             f"{fmt_date(user.created_at)[:10]} · dernière connexion le {fmt_date(user.last_login)}")
+head.caption(t("@{user} · {role} · membre depuis le {since} · dernière connexion le {last}",
+               user=user.username, role=t(auth.ROLES[user.role]),
+               since=fmt_date(user.created_at)[:10], last=fmt_date(user.last_login)))
 
 if st.session_state.pop("onboarding_banner", False):
-    st.info("👋 **Première étape :** indique tes **allergies** et ton **régime** ci-dessous. "
+    st.info(t("👋 **Première étape :** indique tes **allergies** et ton **régime** ci-dessous. "
             "Elles seront appliquées à toutes tes recherches : les ingrédients incompatibles "
             "ne te seront jamais proposés. Tu pourras les modifier à tout moment. "
             "Ensuite, passe par **⭐ Noter des recettes** pour que les suggestions collent "
-            "à tes goûts.")
+            "à tes goûts."))
 
 t_food, t_learned, t_perso, t_info, t_security = st.tabs(
-    ["🥗 Préférences alimentaires", "🧠 Ce que le modèle sait de toi", "✨ Personnalisation",
-     "📇 Informations", "🔒 Sécurité"])
+    [t("🥗 Préférences alimentaires"), t("🧠 Ce que le modèle sait de toi"),
+     t("✨ Personnalisation"), t("📇 Informations"), t("🔒 Sécurité")])
 
 # ----------------------------------------------------------- food preferences
 with t_food:
-    st.markdown("Ces préférences sont appliquées **automatiquement** à chacune de tes recherches. "
-                "Les ingrédients incompatibles ne te seront jamais proposés.")
+    st.markdown(t("Ces préférences sont appliquées **automatiquement** à chacune de tes recherches. "
+                "Les ingrédients incompatibles ne te seront jamais proposés."))
     with st.form("food"):
         c1, c2 = st.columns(2)
-        diet_label = c1.selectbox("Régime alimentaire", list(DIETS),
+        diet_label = c1.selectbox(t("Régime alimentaire"), list(DIETS), format_func=t,
                                   index=list(DIETS).index(DIET_LABELS.get(user.diet, "Aucun")))
-        top_k = c2.slider("Nombre de suggestions par recherche", 1, 30, user.top_k)
-        allergies = st.multiselect("Allergies et intolérances", list(ALLERGIES),
-                                   default=user.allergies, format_func=ALLERGIES.get,
-                                   placeholder="Aucune")
-        disliked = st.multiselect("Ingrédients que je n'aime pas", load_vocab(),
+        top_k = c2.slider(t("Nombre de suggestions par recherche"), 1, 30, user.top_k)
+        allergies = st.multiselect(t("Allergies et intolérances"), list(ALLERGIES),
+                                   default=user.allergies,
+                                   format_func=lambda a: t(ALLERGIES[a]), placeholder=t("Aucune"))
+        disliked = st.multiselect(t("Ingrédients que je n'aime pas"), load_vocab(),
                                   default=[d for d in user.disliked if d in set(load_vocab())],
-                                  format_func=ingredient_label, placeholder="Aucun",
-                                  help="Ils ne te seront jamais proposés. Le bouton « 👎 Je "
+                                  format_func=ingredient_label, placeholder=t("Aucun"),
+                                  help=t("Ils ne te seront jamais proposés. Le bouton « 👎 Je "
                                        "n'aime pas » sur une suggestion fait la même chose "
-                                       "(voir l'onglet « Ce que le modèle sait de toi »).")
-        if st.form_submit_button("Enregistrer mes préférences", type="primary"):
+                                       "(voir l'onglet « Ce que le modèle sait de toi »)."))
+        if st.form_submit_button(t("Enregistrer mes préférences"), type="primary"):
             save(diet=DIETS[diet_label], allergies=allergies, disliked=disliked, top_k=top_k)
 
 # --------------------------------------------------------- what the model learned
@@ -74,7 +76,7 @@ def change_feedback(name: str, feedback: str, message: str) -> None:
                                    base_url=api_url())
         st.toast(message)
     except api_client.APIError:
-        st.toast("Impossible d'enregistrer : le serveur ne répond pas.", icon="❌")
+        st.toast(t("Impossible d'enregistrer : le serveur ne répond pas."), icon="❌")
 
 
 def chips(items: list[dict], color: str) -> str:
@@ -93,127 +95,127 @@ def feedback_list(names: list[str], button: str, feedback: str, message: str, ke
         left, right = st.columns([4, 2], vertical_alignment="center")
         left.markdown(f"{ingredient_img(name, 28)}{fr(name).capitalize()}",
                       unsafe_allow_html=True)
-        right.button(button, key=f"{key}|{name}", on_click=change_feedback,
-                     args=(name, feedback, message.format(fr(name))), width="stretch")
+        right.button(t(button), key=f"{key}|{name}", on_click=change_feedback,
+                     args=(name, feedback, t(message).format(fr(name))), width="stretch")
 
 
 with t_learned:
-    st.markdown("Le modèle ajuste ses suggestions selon **les recettes que tu notes**, **tes "
-                "avis** (👍 👎 ⚠️ sur les suggestions)" + (" et **les recettes notées par ton "
-                                                           "profil Food.com**"
-                                                           if user.food_com_id else "")
-                + ". Voici ce qu'il retient.")
+    st.markdown(t("Le modèle ajuste ses suggestions selon **les recettes que tu notes**, **tes "
+                  "avis** (👍 👎 ⚠️ sur les suggestions)")
+                + (t(" et **les recettes notées par ton profil Food.com**")
+                   if user.food_com_id else "")
+                + t(". Voici ce qu'il retient."))
     try:
         prof = api_client.profile(auth.log_user_id(user), auth.history_user_id(user), n=12,
                                   base_url=api_url())
     except api_client.APIError:
-        st.error(API_DOWN_MSG)
+        st.error(t(API_DOWN_MSG))
         prof = None
     n_rated = (prof or {}).get("n_recipe_ratings", 0)
     note, link = st.columns([3, 2], vertical_alignment="center")
-    note.markdown(f"⭐ **{n_rated} recette(s) notée(s)**"
-                  + ("" if n_rated >= 10 else " : note-en au moins 10 pour des suggestions "
-                                              "vraiment personnalisées."))
-    link.page_link("views/recettes.py", label="Noter des recettes", icon="⭐")
+    note.markdown(t("⭐ **{n} recette(s) notée(s)**", n=n_rated)
+                  + ("" if n_rated >= 10 else t(" : note-en au moins 10 pour des suggestions "
+                                                "vraiment personnalisées.")))
+    link.page_link("views/recettes.py", label=t("Noter des recettes"), icon="⭐")
     if prof:
         fb = prof.get("feedback") or {}
         if prof.get("mock"):
-            st.info("🧪 Le vrai modèle n'est pas chargé sur l'API : seuls tes avis sont listés.")
+            st.info(t("🧪 Le vrai modèle n'est pas chargé sur l'API : seuls tes avis sont listés."))
         else:
             liked_col, disliked_col = st.columns(2)
             with liked_col:
-                st.markdown("##### 💚 Ce qu'il pense que tu aimes")
+                st.markdown(t("##### 💚 Ce qu'il pense que tu aimes"))
                 if prof["likes"]:
                     st.markdown(chips(prof["likes"], "#7FAF3A"), unsafe_allow_html=True)
-                    st.caption("Tes 👍 et les ingrédients qui leur ressemblent"
-                               + (", plus tes recettes Food.com" if prof.get("has_rating_history")
+                    st.caption(t("Tes 👍 et les ingrédients qui leur ressemblent")
+                               + (t(", plus tes recettes Food.com") if prof.get("has_rating_history")
                                   else "") + ".")
                 else:
-                    st.caption("Rien pour l'instant : mets 👍 sur des suggestions.")
+                    st.caption(t("Rien pour l'instant : mets 👍 sur des suggestions."))
             with disliked_col:
-                st.markdown("##### 💔 Ce qu'il pense que tu n'aimes pas")
+                st.markdown(t("##### 💔 Ce qu'il pense que tu n'aimes pas"))
                 if prof["dislikes"]:
                     st.markdown(chips(prof["dislikes"], "#D9534F"), unsafe_allow_html=True)
                 else:
-                    st.caption("Rien pour l'instant.")
+                    st.caption(t("Rien pour l'instant."))
             if user.food_com_id and not prof.get("has_rating_history"):
-                st.warning("Ton profil Food.com n'a pas de recettes notées connues du modèle : "
-                           "la personnalisation ne vient que de tes avis.")
+                st.warning(t("Ton profil Food.com n'a pas de recettes notées connues du modèle : "
+                             "la personnalisation ne vient que de tes avis."))
 
         st.divider()
-        st.markdown("##### Tes avis, un par un")
-        st.caption("Tu peux changer d'avis à tout moment : c'est pris en compte dès ta "
-                   "prochaine recherche.")
+        st.markdown(t("##### Tes avis, un par un"))
+        st.caption(t("Tu peux changer d'avis à tout moment : c'est pris en compte dès ta "
+                     "prochaine recherche."))
         a, b, c = st.columns(3)
         with a:
-            st.markdown(f"**👍 Aimés ({len(fb.get('liked', []))})**")
+            st.markdown(t("**👍 Aimés ({n})**", n=len(fb.get("liked", []))))
             feedback_list(fb.get("liked", []), "👎 Plus maintenant", "dislike",
                           "{} ne te sera plus proposé.", "unlike")
         with b:
-            st.markdown(f"**👎 Écartés ({len(fb.get('disliked', []))})**")
+            st.markdown(t("**👎 Écartés ({n})**", n=len(fb.get("disliked", []))))
             feedback_list(fb.get("disliked", []), "👍 En fait j'aime", "like",
                           "{} peut de nouveau t'être proposé.", "undislike")
         with c:
-            st.markdown(f"**⚠️ Allergies ({len(fb.get('allergic', []))})**")
+            st.markdown(t("**⚠️ Allergies ({n})**", n=len(fb.get("allergic", []))))
             feedback_list(fb.get("allergic", []), "✅ Pas allergique", "not_allergic",
                           "Allergie à {} retirée.", "unallergic")
         if not any(fb.get(k) for k in ("liked", "disliked", "allergic")):
-            st.info("Aucun avis pour l'instant. Va sur **Trouver des accords** et donne ton avis "
-                    "sur les suggestions.")
-        st.caption("Les « 🚫 Pas avec ça » ne comptent que pour la recherche où tu les as "
-                   "donnés : ils sont dans ton historique.")
+            st.info(t("Aucun avis pour l'instant. Va sur **Trouver des accords** et donne ton avis "
+                      "sur les suggestions."))
+        st.caption(t("Les « 🚫 Pas avec ça » ne comptent que pour la recherche où tu les as "
+                     "donnés : ils sont dans ton historique."))
 
 # ------------------------------------------------------------ personalization
 with t_perso:
-    st.markdown(
+    st.markdown(t(
         "Le modèle apprend les goûts des utilisateurs à partir de **recettes notées**. Le plus "
         "simple : **note des recettes** directement ici. Tu peux aussi relier ton compte à un "
-        "profil Food.com existant : ses notes s'ajoutent aux tiennes.")
-    st.page_link("views/recettes.py", label="Noter des recettes", icon="⭐")
+        "profil Food.com existant : ses notes s'ajoutent aux tiennes."))
+    st.page_link("views/recettes.py", label=t("Noter des recettes"), icon="⭐")
     demo = load_demo_users()
     options = ["none"] + demo + ["custom"]
     current = user.food_com_id
     idx = options.index(current) if current in demo else (len(options) - 1 if current else 0)
     with st.form("perso"):
-        choice = st.radio("Profil Food.com", options, index=idx, format_func=lambda o: {
-            "none": "Aucun : suggestions générales", "custom": "Autre identifiant Food.com…"}
-            .get(o) or food_com_label(o))
-        custom = st.text_input("Identifiant Food.com", value=current if current and
-                               current not in demo else "", placeholder="ex. 1533",
-                               help="Utilisé seulement si « Autre identifiant » est coché.")
-        if st.form_submit_button("Enregistrer", type="primary"):
+        choice = st.radio(t("Profil Food.com"), options, index=idx, format_func=lambda o: {
+            "none": t("Aucun : suggestions générales"),
+            "custom": t("Autre identifiant Food.com…")}.get(o) or food_com_label(o))
+        custom = st.text_input(t("Identifiant Food.com"), value=current if current and
+                               current not in demo else "", placeholder=t("ex. 1533"),
+                               help=t("Utilisé seulement si « Autre identifiant » est coché."))
+        if st.form_submit_button(t("Enregistrer"), type="primary"):
             fid = None if choice == "none" else (custom.strip() or None) \
                 if choice == "custom" else choice
             if choice == "custom" and not fid:
-                st.error("Indique un identifiant Food.com.")
+                st.error(t("Indique un identifiant Food.com."))
             else:
                 save(food_com_id=fid)
     if current:
-        st.success(f"✨ Relié à : {food_com_label(current)}")
+        st.success(t("✨ Relié à : {name}", name=food_com_label(current)))
 
 # -------------------------------------------------------------------- info
 with t_info:
     with st.form("info"):
-        name = st.text_input("Prénom et nom", value=user.display_name)
-        email = st.text_input("Adresse e-mail", value=user.email)
-        st.text_input("Identifiant de connexion", value=user.username, disabled=True,
-                      help="L'identifiant ne peut pas être modifié.")
-        if st.form_submit_button("Enregistrer", type="primary"):
+        name = st.text_input(t("Prénom et nom"), value=user.display_name)
+        email = st.text_input(t("Adresse e-mail"), value=user.email)
+        st.text_input(t("Identifiant de connexion"), value=user.username, disabled=True,
+                      help=t("L'identifiant ne peut pas être modifié."))
+        if st.form_submit_button(t("Enregistrer"), type="primary"):
             save(display_name=name, email=email)
 
 # ---------------------------------------------------------------- security
 with t_security:
     with st.form("password", clear_on_submit=True):
-        st.markdown("**Changer mon mot de passe**")
-        current_pw = st.text_input("Mot de passe actuel", type="password")
-        new_pw = st.text_input("Nouveau mot de passe", type="password",
-                               help=f"Au moins {auth.MIN_PASSWORD} caractères")
-        confirm_pw = st.text_input("Confirmer le nouveau mot de passe", type="password")
-        if st.form_submit_button("Changer le mot de passe", type="primary"):
+        st.markdown(t("**Changer mon mot de passe**"))
+        current_pw = st.text_input(t("Mot de passe actuel"), type="password")
+        new_pw = st.text_input(t("Nouveau mot de passe"), type="password",
+                               help=t("Au moins {n} caractères", n=auth.MIN_PASSWORD))
+        confirm_pw = st.text_input(t("Confirmer le nouveau mot de passe"), type="password")
+        if st.form_submit_button(t("Changer le mot de passe"), type="primary"):
             try:
                 auth.change_password(user.username, current_pw, new_pw, confirm_pw)
-                st.success("Mot de passe changé ✅")
+                st.success(t("Mot de passe changé ✅"))
             except auth.AuthError as e:
-                st.error(str(e))
-    st.caption("🔒 Ton mot de passe n'est jamais stocké en clair : seule une empreinte salée "
-               "est gardée.")
+                st.error(t(str(e)))
+    st.caption(t("🔒 Ton mot de passe n'est jamais stocké en clair : seule une empreinte salée "
+                 "est gardée."))

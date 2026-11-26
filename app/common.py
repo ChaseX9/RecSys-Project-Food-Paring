@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import sys
 import unicodedata
+from html import escape
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +18,7 @@ import streamlit as st
 from streamlit import config as st_config
 
 from app import api_client
+from app.i18n import is_en, t
 
 PROCESSED = ROOT / "data" / "processed"
 APP_DIR = Path(__file__).resolve().parent
@@ -89,8 +91,9 @@ def load_translations() -> dict[str, str]:
 
 
 def fr(name: str) -> str:
-    """French name if we have one, else the original (English) name."""
-    return load_translations().get(name, name)
+    """Display name: the French one if we have it and the app is in French, else the original
+    (English) name."""
+    return name if is_en() else load_translations().get(name, name)
 
 
 def fold(text: str) -> str:
@@ -105,7 +108,7 @@ def ingredient_label(name: str) -> str:
     The box only matches the typed text against this label (plain substring, accents
     matter), so the accent-free spelling is added when it differs: "oeuf" finds "œuf".
     """
-    tr = load_translations().get(name)
+    tr = None if is_en() else load_translations().get(name)
     if not tr or tr == name:
         return name
     plain = fold(tr)
@@ -140,20 +143,20 @@ def user_label(user_id: str) -> str:
     from app import auth
 
     if user_id == ANONYMOUS or user_id.startswith(auth.GUEST_PREFIX):
-        return "Invité"
+        return t("Invité")
     account = _display_names(api_url()).get(user_id)
     if account:
         return account
     demo = load_demo_users()
     if user_id in demo:
-        return f"Profil Food.com n°{demo.index(user_id) + 1}"
-    return f"Utilisateur {user_id}"
+        return t("Profil Food.com n°{n}", n=demo.index(user_id) + 1)
+    return t("Utilisateur {id}", id=user_id)
 
 
 def food_com_label(food_com_id: str) -> str:
     demo = load_demo_users()
     if food_com_id in demo:
-        return f"Profil exemple n°{demo.index(food_com_id) + 1} (id {food_com_id})"
+        return t("Profil exemple n°{n} (id {id})", n=demo.index(food_com_id) + 1, id=food_com_id)
     return f"id {food_com_id}"
 
 
@@ -278,12 +281,11 @@ def recipe_img(recipe_id: int, ingredients: list[str], size: int = 96) -> str:
     path = _foodcom_photo_paths().get(int(recipe_id))
     if not path:
         return local
-    from html import escape
-
     url = escape(PHOTO_URL.format(px=min(2 * size, 320), path=path.replace(" ", "%20")), quote=True)
     return (f"<span style='position:relative;display:inline-block;width:{size}px;"
             f"height:{size}px;vertical-align:middle;flex:none'>{local}"
-            f"<img src='{url}' alt='' loading='lazy' title='Photo de la recette (Food.com)' "
+            f"<img src='{url}' alt='' loading='lazy' "
+            f"title='{escape(t('Photo de la recette (Food.com)'), quote=True)}' "
             f"style='position:absolute;inset:0;width:{size}px;height:{size}px;object-fit:cover;"
             f"border-radius:10px'></span>")
 
@@ -296,7 +298,8 @@ def _local_recipe_img(recipe_id: int, ingredients: list[str], size: int = 96) ->
     rel = _recipe_photo_paths().get(int(recipe_id))
     uri = _image_uri(rel) if rel else None
     if uri:
-        return (f"<img src='{uri}' alt='' title='Photo d&#39;un plat similaire (TheMealDB)' "
+        title = escape(t("Photo d'un plat similaire (TheMealDB)"), quote=True)
+        return (f"<img src='{uri}' alt='' title='{title}' "
                 f"style='{box};object-fit:cover'>")
     ordered = sorted(ingredients, key=lambda n: n in _STAPLES)  # stable: keeps recipe order
     uris = [u for u in (_image_uri(p) for p in (_image_paths().get(n) for n in ordered) if p) if u]
@@ -308,8 +311,9 @@ def _local_recipe_img(recipe_id: int, ingredients: list[str], size: int = 96) ->
     cell = size // 2 if len(uris) > 1 else size
     imgs = "".join(f"<img src='{u}' alt='' style='width:{cell}px;height:{cell}px;"
                    f"object-fit:contain;padding:3px;box-sizing:border-box'>" for u in uris)
+    title = escape(t("Les ingrédients de la recette"), quote=True)
     return (f"<span style='{box};display:inline-flex;flex-wrap:wrap;align-content:center;"
-            f"justify-content:center' title='Les ingrédients de la recette'>{imgs}</span>")
+            f"justify-content:center' title='{title}'>{imgs}</span>")
 
 
 # ---------------------------------------------------------- explanations
@@ -328,9 +332,13 @@ _EXPLANATIONS = [
 
 
 def explanation_fr(text: str) -> str:
-    """Turn the API's (English, technical) explanation into a short French sentence."""
+    """Turn the API's (English, technical) explanation into a short sentence, in French or
+    left in English according to the app's language."""
     if text.startswith("[mock]"):
-        return "Suggestion d'exemple : le vrai modèle n'est pas encore branché."
+        return t("Suggestion d'exemple : le vrai modèle n'est pas encore branché.")
+    if is_en():
+        sentence = " and ".join(dict.fromkeys(p.strip() for p in text.split(" + ")))
+        return sentence[:1].upper() + sentence[1:] + "."
     out = []
     for part in text.split(" + "):
         for pattern, french in _EXPLANATIONS:
@@ -362,11 +370,13 @@ def mode_badge(is_mock: bool | None) -> None:
     if is_mock is None:
         return
     if is_mock:
-        st.markdown(":orange-badge[🧪 Résultats d'exemple]",
-                    help="Le vrai modèle n'est pas encore branché sur l'API : "
-                         "les suggestions sont tirées au hasard (mais toujours les mêmes).")
+        title = t("🧪 Résultats d'exemple")
+        st.markdown(f":orange-badge[{title}]",
+                    help=t("Le vrai modèle n'est pas encore branché sur l'API : "
+                           "les suggestions sont tirées au hasard (mais toujours les mêmes)."))
     else:
-        st.markdown(":green-badge[✅ Modèle réel]")
+        title = t("✅ Modèle réel")
+        st.markdown(f":green-badge[{title}]")
 
 
 API_DOWN_MSG = ("Le serveur de recommandations ne répond pas. "

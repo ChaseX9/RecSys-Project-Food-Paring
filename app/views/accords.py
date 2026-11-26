@@ -9,6 +9,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app import api_client, auth
+from app.i18n import t
 from app.common import (ALLERGIES, API_DOWN_MSG, DIET_LABELS, DIETS, EXAMPLES, FEEDBACK, api_url,
                         explanation_fr, fr, ingredient_img, ingredient_label, load_vocab,
                         mode_badge)
@@ -67,23 +68,23 @@ def send_feedback(query: list[str], name: str, feedback: str, note_key: str | No
         row_id = api_client.log_interaction(auth.log_user_id(u), query, feedback, name, note,
                                             base_url=api_url())
     except api_client.APIError:
-        st.toast("Impossible d'enregistrer ton avis : le serveur ne répond pas.", icon="❌")
+        st.toast(t("Impossible d'enregistrer ton avis : le serveur ne répond pas."), icon="❌")
         return
     if feedback != "click":
         st.session_state.feedback[f"{'+'.join(query)}|{name}"] = (feedback, row_id)
     if toast:
         icon, label = FEEDBACK[feedback]
-        st.toast(f"« {label} » enregistré pour {fr(name)} : {EFFECTS.get(feedback, 'merci !')}.",
-                 icon=icon)
+        st.toast(t("« {label} » enregistré pour {name} : {effect}.", label=t(label), name=fr(name),
+                   effect=t(EFFECTS.get(feedback, "merci !"))), icon=icon)
 
 
 # ---------------------------------------------------------------------- main
-st.title("🍽️ Qu'est-ce qui va bien avec… ?")
-st.markdown("Choisis un ou plusieurs ingrédients que tu as sous la main : on te propose "
-            "ceux qui s'accordent le mieux avec, en respectant tes allergies et ton régime.")
+st.title(t("🍽️ Qu'est-ce qui va bien avec… ?"))
+st.markdown(t("Choisis un ou plusieurs ingrédients que tu as sous la main : on te propose "
+            "ceux qui s'accordent le mieux avec, en respectant tes allergies et ton régime."))
 
-with st.expander("Comment ça marche ?"):
-    st.markdown(
+with st.expander(t("Comment ça marche ?")):
+    st.markdown(t(
         "1. **Choisis tes ingrédients** dans la liste (tape en français ou en anglais).\n"
         "2. Vérifie **tes contraintes** juste en dessous : elles viennent de ton profil, "
         "et tu peux les changer pour une seule recherche.\n"
@@ -96,10 +97,10 @@ with st.expander("Comment ça marche ?"):
         "   - ⚠️ **Allergie** : ni lui ni ses variantes (ex. arachide → beurre de cacahuète) "
         "ne te seront plus jamais proposés ;\n"
         "   - 🍳 **Cuisiné** : compte comme un « J'aime », avec une note."
-    )
+    ))
 
-st.multiselect("Tes ingrédients", load_vocab(), key="ingredients", format_func=ingredient_label,
-               placeholder="Ex. saumon, tomate, chocolat…")
+st.multiselect(t("Tes ingrédients"), load_vocab(), key="ingredients", format_func=ingredient_label,
+               placeholder=t("Ex. saumon, tomate, chocolat…"))
 
 
 def query_strip(names: list[str], size: int = 44) -> str:
@@ -113,36 +114,36 @@ def query_strip(names: list[str], size: int = 44) -> str:
 if st.session_state.ingredients:
     st.markdown(query_strip(st.session_state.ingredients), unsafe_allow_html=True)
 ex_cols = st.columns([1.2] + [1] * len(EXAMPLES))
-ex_cols[0].markdown("Idées :")
+ex_cols[0].markdown(t("Idées :"))
 for col, (label, ings) in zip(ex_cols[1:], EXAMPLES.items()):
-    col.button(label, on_click=set_query, args=(ings,), width="stretch")
+    col.button(t(label), on_click=set_query, args=(ings,), width="stretch")
 
 # ------------------------------------------------------------- constraints
 allergies, diet = st.session_state.f_allergies, DIETS[st.session_state.f_diet]
 disliked, top_k = st.session_state.f_disliked, st.session_state.f_top_k
-chips = ([f"🥗 {st.session_state.f_diet}"] if diet else []) + \
-        [f"⚠️ sans {ALLERGIES[a].lower()}" for a in allergies] + \
-        ([f"🚫 {len(disliked)} ingrédient(s) évité(s)"] if disliked else []) + \
-        [f"🔢 {top_k} suggestions"]
-st.markdown("**Tes contraintes :** " + " · ".join(chips))
-with st.expander("Modifier pour cette recherche"):
+chips = ([f"🥗 {t(st.session_state.f_diet)}"] if diet else []) + \
+        [t("⚠️ sans {name}", name=t(ALLERGIES[a]).lower()) for a in allergies] + \
+        ([t("🚫 {n} ingrédient(s) évité(s)", n=len(disliked))] if disliked else []) + \
+        [t("🔢 {n} suggestions", n=top_k)]
+st.markdown(t("**Tes contraintes :** ") + " · ".join(chips))
+with st.expander(t("Modifier pour cette recherche")):
     c1, c2 = st.columns(2)
-    c1.multiselect("Allergies", list(ALLERGIES), key="f_allergies",
-                   format_func=ALLERGIES.get, placeholder="Aucune")
-    c2.selectbox("Régime alimentaire", list(DIETS), key="f_diet")
-    c1.multiselect("Ingrédients à éviter", load_vocab(), key="f_disliked",
-                   format_func=ingredient_label, placeholder="Aucun")
-    c2.slider("Nombre de suggestions", 1, 30, key="f_top_k")
+    c1.multiselect(t("Allergies"), list(ALLERGIES), key="f_allergies",
+                   format_func=lambda a: t(ALLERGIES[a]), placeholder=t("Aucune"))
+    c2.selectbox(t("Régime alimentaire"), list(DIETS), key="f_diet", format_func=t)
+    c1.multiselect(t("Ingrédients à éviter"), load_vocab(), key="f_disliked",
+                   format_func=ingredient_label, placeholder=t("Aucun"))
+    c2.slider(t("Nombre de suggestions"), 1, 30, key="f_top_k")
     if user:
-        st.page_link("views/profil.py", label="Changer mes préférences par défaut (profil)",
+        st.page_link("views/profil.py", label=t("Changer mes préférences par défaut (profil)"),
                      icon="👤")
     else:
-        st.caption("💡 Crée un compte pour enregistrer ces préférences une fois pour toutes.")
+        st.caption(t("💡 Crée un compte pour enregistrer ces préférences une fois pour toutes."))
 
 query = st.session_state.ingredients
-if st.button("🔍 Trouver des accords", type="primary", disabled=not query):
+if st.button(t("🔍 Trouver des accords"), type="primary", disabled=not query):
     try:
-        with st.spinner("On cherche les meilleurs accords…"):
+        with st.spinner(t("On cherche les meilleurs accords…")):
             body, latency = api_client.recommend(
                 query, auth.log_user_id(user), top_k, allergies, diet, base_url=api_url(),
                 exclude=disliked, history_user_id=auth.history_user_id(user))
@@ -151,9 +152,9 @@ if st.button("🔍 Trouver des accords", type="primary", disabled=not query):
                                     "query": list(query), "allergies": allergies, "diet": diet}
     except api_client.APIError:
         st.session_state.pop("results", None)
-        st.error(API_DOWN_MSG)
+        st.error(t(API_DOWN_MSG))
 if not query:
-    st.caption("👆 Ajoute au moins un ingrédient, ou clique sur une idée.")
+    st.caption(t("👆 Ajoute au moins un ingrédient, ou clique sur une idée."))
 
 
 def score_breakdown(rec: dict) -> str:
@@ -174,10 +175,11 @@ def score_breakdown(rec: dict) -> str:
     segs = "".join(f'<div style="width:{100 * v / total:.1f}%;background:{PARTS[k][0]}"></div>'
                    for k, v in parts.items() if v > 0)
     legend = " &nbsp; ".join(
-        f'<span style="color:{PARTS[k][0]}">●</span> {PARTS[k][1]} {100 * v / total:.0f} %'
+        f'<span style="color:{PARTS[k][0]}">●</span> {t(PARTS[k][1])} {100 * v / total:.0f} %'
         for k, v in parts.items() if v > 0)
     taste = (rec["score"] - pairing) / pairing * 100 if pairing > 0 else 0.0
-    taste_txt = f" &nbsp;·&nbsp; 💙 tes goûts : {taste:+.0f} %" if abs(taste) >= 0.5 else ""
+    taste_txt = " &nbsp;·&nbsp; " + t("💙 tes goûts : {value} %", value=f"{taste:+.0f}") \
+        if abs(taste) >= 0.5 else ""
     return (f'<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;'
             f'background:rgba(128,128,128,.25);margin:2px 0 4px">{segs}</div>'
             f'<div style="font-size:.85em;opacity:.8">{legend}{taste_txt} &nbsp;·&nbsp; '
@@ -195,43 +197,43 @@ def render_card(rank: int, rec: dict, q: list[str], best: float, details: bool) 
         title.markdown(f"#### {ingredient_img(name, 48)}{rank}. {fr(name).capitalize()}{english}",
                        unsafe_allow_html=True)
         level = max(0.0, min(1.0, rec["score"] / best)) if best > 0 else 0.0
-        match.progress(level, text=f"Niveau d'accord : {level * 100:.0f} %")
+        match.progress(level, text=t("Niveau d'accord : {value} %", value=f"{level * 100:.0f}"))
         st.markdown(f"💡 {explanation_fr(rec['explanation'])}")
         if details:
             st.markdown(score_breakdown(rec), unsafe_allow_html=True)
 
         if given:
             icon, label = FEEDBACK[given[0]]
-            st.caption(f"{icon} Ton avis « {label} » est enregistré.")
+            st.caption(t("{icon} Ton avis « {label} » est enregistré.", icon=icon, label=t(label)))
             return
         b = st.columns(6)
-        b[0].button("👍 J'aime", key=f"like|{key}", on_click=send_feedback,
+        b[0].button(t("👍 J'aime"), key=f"like|{key}", on_click=send_feedback,
                     args=(q, name, "like"), width="stretch",
-                    help="Il remontera, ainsi que les ingrédients qui lui ressemblent")
-        b[1].button("👎 Je n'aime pas", key=f"dislike|{key}", on_click=send_feedback,
+                    help=t("Il remontera, ainsi que les ingrédients qui lui ressemblent"))
+        b[1].button(t("👎 Je n'aime pas"), key=f"dislike|{key}", on_click=send_feedback,
                     args=(q, name, "dislike"), width="stretch",
-                    help="Il ne te sera plus proposé (quelle que soit la recherche)")
-        b[2].button("🚫 Pas avec ça", key=f"nfm|{key}", on_click=send_feedback,
+                    help=t("Il ne te sera plus proposé (quelle que soit la recherche)"))
+        b[2].button(t("🚫 Pas avec ça"), key=f"nfm|{key}", on_click=send_feedback,
                     args=(q, name, "not_for_me"), width="stretch",
-                    help="Bon ingrédient, mais pas avec cette recherche : il ne te sera plus "
-                         "proposé avec ces ingrédients-là")
-        with b[3].popover("⚠️ Allergie", width="stretch",
-                          help="Je suis allergique à cet ingrédient"):
-            st.markdown(f"**{fr(name).capitalize()}** et toutes ses variantes ne te seront "
-                        "**plus jamais** proposés, même si tu cliques ensuite sur 👍.")
-            st.caption("Tu pourras annuler depuis ton profil en cas d'erreur.")
-            st.button("Oui, j'y suis allergique", key=f"allergic|{key}", on_click=send_feedback,
+                    help=t("Bon ingrédient, mais pas avec cette recherche : il ne te sera plus "
+                           "proposé avec ces ingrédients-là"))
+        with b[3].popover(t("⚠️ Allergie"), width="stretch",
+                          help=t("Je suis allergique à cet ingrédient")):
+            st.markdown(t("**{name}** et toutes ses variantes ne te seront **plus jamais** proposés, "
+                          "même si tu cliques ensuite sur 👍.", name=fr(name).capitalize()))
+            st.caption(t("Tu pourras annuler depuis ton profil en cas d'erreur."))
+            st.button(t("Oui, j'y suis allergique"), key=f"allergic|{key}", on_click=send_feedback,
                       args=(q, name, "allergic"), type="primary")
-        with b[4].popover("🍳 Cuisiné", width="stretch"):
-            st.text_area("Qu'as-tu préparé ?", key=f"note|{key}",
-                         placeholder="Ex. saumon au four, sauce aneth et citron")
-            st.button("Enregistrer", key=f"cooked|{key}", on_click=send_feedback,
+        with b[4].popover(t("🍳 Cuisiné"), width="stretch"):
+            st.text_area(t("Qu'as-tu préparé ?"), key=f"note|{key}",
+                         placeholder=t("Ex. saumon au four, sauce aneth et citron"))
+            st.button(t("Enregistrer"), key=f"cooked|{key}", on_click=send_feedback,
                       args=(q, name, "cooked"), kwargs={"note_key": f"note|{key}"},
                       type="primary")
         if name not in st.session_state.ingredients:
-            b[5].button("➕ Ajouter", key=f"add|{key}", on_click=add_to_query,
+            b[5].button(t("➕ Ajouter"), key=f"add|{key}", on_click=add_to_query,
                         args=(name, q), width="stretch",
-                        help="Ajoute cet ingrédient à ta recherche pour aller plus loin")
+                        help=t("Ajoute cet ingrédient à ta recherche pour aller plus loin"))
 
 
 res = st.session_state.get("results")
@@ -239,27 +241,27 @@ if res:
     recs = res["recs"]
     st.divider()
     head, side = st.columns([4, 1], vertical_alignment="center")
-    head.markdown(f"### {len(recs)} suggestions pour")
+    head.markdown(t("### {n} suggestions pour", n=len(recs)))
     head.markdown(query_strip(res["query"], 40), unsafe_allow_html=True)
     info = []
     if user and user.food_com_id:
-        info.append("✨ personnalisé avec ton profil Food.com")
+        info.append(t("✨ personnalisé avec ton profil Food.com"))
     fb = res["body"].get("applied_feedback") or {}
     n_fb = {k: len(fb.get(k) or []) for k in ("liked", "disliked", "allergic")}
     if any(n_fb.values()):
-        info.append("🧠 tes avis sont pris en compte (" + ", ".join(
-            f"{n} {label}" for n, label in [(n_fb["liked"], "aimé(s)"),
-                                             (n_fb["disliked"], "écarté(s)"),
-                                             (n_fb["allergic"], "allergie(s)")] if n) + ")")
-    head.caption(" · ".join(info + [f"réponse en {res['latency'] * 1000:.0f} ms"]))
+        info.append(t("🧠 tes avis sont pris en compte ({details})", details=", ".join(
+            f"{n} {t(label)}" for n, label in [(n_fb["liked"], "aimé(s)"),
+                                                (n_fb["disliked"], "écarté(s)"),
+                                                (n_fb["allergic"], "allergie(s)")] if n)))
+    head.caption(" · ".join(info + [t("réponse en {ms} ms", ms=f"{res['latency'] * 1000:.0f}")]))
     with side:
         mode_badge(res["body"].get("mock"))
-        details = st.toggle("Détail des scores", value=False,
-                            help="D'où vient chaque suggestion : habitudes culinaires, "
-                                 "chimie des arômes, tes goûts.")
+        details = st.toggle(t("Détail des scores"), value=False,
+                            help=t("D'où vient chaque suggestion : habitudes culinaires, "
+                                   "chimie des arômes, tes goûts."))
     if not recs:
-        st.warning("Aucune suggestion ne respecte toutes tes contraintes. "
-                   "Essaie de retirer une allergie ou de changer de régime.")
+        st.warning(t("Aucune suggestion ne respecte toutes tes contraintes. "
+                     "Essaie de retirer une allergie ou de changer de régime."))
     best = recs[0]["score"] if recs else 1.0
     for i, rec in enumerate(recs, 1):
         render_card(i, rec, res["query"], best, details)
