@@ -15,10 +15,12 @@ import streamlit as st
 
 from app import auth
 from app.common import api_status, api_url, ensure_theme, logo_data_uri
+from app.i18n import language_selector, t
 
 st.set_page_config(page_title="Food Pairing", page_icon="🍽️", layout="wide")
 
 st.session_state.setdefault("dark_mode", True)
+st.session_state.setdefault("lang", "fr")
 ensure_theme(st.session_state.dark_mode)
 
 user = auth.current_user()
@@ -26,15 +28,15 @@ guest = auth.is_guest()
 
 # ------------------------------------------------------------- pages by role
 P = {
-    "login": st.Page("views/connexion.py", title="Connexion", icon="🔑", default=True),
-    "accords": st.Page("views/accords.py", title="Trouver des accords", icon="🍽️",
+    "login": st.Page("views/connexion.py", title=t("Connexion"), icon="🔑", default=True),
+    "accords": st.Page("views/accords.py", title=t("Trouver des accords"), icon="🍽️",
                        default=True, url_path="accords"),
-    "frigo": st.Page("views/frigo.py", title="Mon frigo", icon="🧊"),
-    "historique": st.Page("views/historique.py", title="Mon historique", icon="📜"),
-    "recettes": st.Page("views/recettes.py", title="Noter des recettes", icon="⭐"),
-    "profil": st.Page("views/profil.py", title="Mon profil", icon="👤"),
-    "admin": st.Page("views/admin.py", title="Administration", icon="🛠️"),
-    "about": st.Page("views/a_propos.py", title="À propos", icon="ℹ️"),
+    "frigo": st.Page("views/frigo.py", title=t("Mon frigo"), icon="🧊"),
+    "historique": st.Page("views/historique.py", title=t("Mon historique"), icon="📜"),
+    "recettes": st.Page("views/recettes.py", title=t("Noter des recettes"), icon="⭐"),
+    "profil": st.Page("views/profil.py", title=t("Mon profil"), icon="👤"),
+    "admin": st.Page("views/admin.py", title=t("Administration"), icon="🛠️"),
+    "about": st.Page("views/a_propos.py", title=t("À propos"), icon="ℹ️"),
 }
 if user and user.is_admin:
     visible = ["accords", "frigo", "recettes", "historique", "profil", "admin", "about"]
@@ -62,8 +64,8 @@ if user and st.session_state.get("onboarding") and "profil" in visible:
 # so the model learns their taste.
 if user and not user.onboarding_done and not st.session_state.get("onboarding_redirected"):
     st.session_state.onboarding_redirected = True
-    st.session_state.flash = ("Bienvenue ! Note quelques recettes pour que les suggestions "
-                              "collent à tes goûts (tu peux passer).")
+    st.session_state.flash = t("Bienvenue ! Note quelques recettes pour que les suggestions "
+                               "collent à tes goûts (tu peux passer).")
     st.switch_page(P["recettes"])
 
 # -------------------------------------------------------------- sidebar top
@@ -71,15 +73,16 @@ uri = logo_data_uri(st.session_state.dark_mode)  # ECE logo, cut out and recolou
 logo_html = f"<img src='{uri}' style='width:150px;margin-bottom:.8rem'><br>" if uri else ""
 
 with st.sidebar:
-    st.markdown(f"<div style='margin-top:-2.5rem'>{logo_html}"
+    language_selector()  # FR / EN, top left
+    st.markdown(f"<div>{logo_html}"
                 "<span style='font-size:1.6rem;font-weight:700'>🍽️ Food Pairing</span><br>"
-                "<span style='opacity:.65;font-size:.9rem'>Les ingrédients qui vont bien "
-                "ensemble</span></div>", unsafe_allow_html=True)
+                f"<span style='opacity:.65;font-size:.9rem'>"
+                f"{t('Les ingrédients qui vont bien ensemble')}</span></div>", unsafe_allow_html=True)
     st.write("")
     for key in visible:
         st.page_link(P[key])
     st.divider()
-    st.toggle("🌙 Mode sombre", key="dark_mode")
+    st.toggle(t("🌙 Mode sombre"), key="dark_mode")
 
 if "flash" in st.session_state:  # one-shot message set before a st.rerun()
     st.toast(st.session_state.pop("flash"))
@@ -90,9 +93,9 @@ nav.run()
 with st.sidebar:
     st.divider()
     if user or guest:
-        name = user.display_name if user else "Invité"
+        name = user.display_name if user else t("Invité")
         initials = user.initials if user else "?"
-        role = auth.ROLES[user.role] if user else "Sans compte"
+        role = t(auth.ROLES[user.role]) if user else t("Sans compte")
         color = "#E0A040" if user and user.is_admin else "#7FAF3A"
         st.markdown(
             f"<div style='display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem'>"
@@ -102,10 +105,10 @@ with st.sidebar:
             f"<span style='font-size:.8rem;opacity:.7'>{role}</span></div></div>",
             unsafe_allow_html=True)
         if user:
-            st.button("Se déconnecter", icon="🚪", on_click=auth.logout, width="stretch")
+            st.button(t("Se déconnecter"), icon="🚪", on_click=auth.logout, width="stretch")
         else:
-            st.button("Se connecter / créer un compte", icon="🔑", on_click=auth.logout,
+            st.button(t("Se connecter / créer un compte"), icon="🔑", on_click=auth.logout,
                       width="stretch")
     ok, ms = api_status(api_url())
-    st.caption(f"🟢 Serveur connecté · {ms:.0f} ms" if ok
-               else "🔴 Serveur de recommandations injoignable")
+    st.caption(t("🟢 Serveur connecté · {ms} ms", ms=f"{ms:.0f}") if ok
+               else t("🔴 Serveur de recommandations injoignable"))

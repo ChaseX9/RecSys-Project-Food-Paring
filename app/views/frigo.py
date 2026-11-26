@@ -11,6 +11,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app import api_client, auth
+from app.i18n import t
 from app.common import (ALLERGIES, API_DOWN_MSG, DIET_LABELS, api_url, explanation_fr, fr,
                         ingredient_img, ingredient_label, load_vocab, mode_badge)
 
@@ -38,7 +39,7 @@ def save_fridge() -> None:
         try:
             auth.update_profile(u.username, fridge=items)
         except auth.AuthError as e:
-            st.toast(f"Frigo non enregistré : {e}", icon="❌")
+            st.toast(t("Frigo non enregistré : {error}", error=t(str(e))), icon="❌")
     else:
         st.session_state.guest_fridge = items
     st.session_state.pop("fridge_results", None)  # results no longer match the fridge
@@ -60,9 +61,9 @@ def like(query: list[str], name: str) -> None:
         api_client.log_interaction(auth.log_user_id(auth.current_user()), query, "like", name,
                                    base_url=api_url())
         st.session_state.setdefault("fridge_liked", set()).add((tuple(query), name))
-        st.toast(f"Noté : {fr(query[0])} + {fr(name)} 👍")
+        st.toast(t("Noté : {a} + {b} 👍", a=fr(query[0]), b=fr(name)))
     except api_client.APIError:
-        st.toast("Impossible d'enregistrer ton avis : le serveur ne répond pas.", icon="❌")
+        st.toast(t("Impossible d'enregistrer ton avis : le serveur ne répond pas."), icon="❌")
 
 
 def ask(query: list[str], candidates: list[str] | None, top_k: int) -> dict:
@@ -73,13 +74,13 @@ def ask(query: list[str], candidates: list[str] | None, top_k: int) -> dict:
 
 
 # ---------------------------------------------------------------- my fridge
-st.title("🧊 Mon frigo")
-st.markdown("Dis-nous ce que tu as chez toi : on te dit **quoi associer avec ce que tu as "
-            "déjà**, sans rien avoir à acheter.")
+st.title(t("🧊 Mon frigo"))
+st.markdown(t("Dis-nous ce que tu as chez toi : on te dit **quoi associer avec ce que tu as "
+            "déjà**, sans rien avoir à acheter."))
 
-st.multiselect("Ce que j'ai dans mon frigo et mes placards", load_vocab(), key="fridge_sel",
+st.multiselect(t("Ce que j'ai dans mon frigo et mes placards"), load_vocab(), key="fridge_sel",
                on_change=save_fridge, format_func=ingredient_label,
-               placeholder="Ajoute tes ingrédients (saumon, œufs, citron…)")
+               placeholder=t("Ajoute tes ingrédients (saumon, œufs, citron…)"))
 fridge = list(st.session_state.fridge_sel)
 if fridge:  # the fridge at a glance
     st.markdown(
@@ -92,25 +93,26 @@ if fridge:  # the fridge at a glance
 missing = [q for q in QUICK_ADD if q not in fridge and q in set(load_vocab())][:8]
 if missing:
     cols = st.columns([1.3] + [1] * len(missing))
-    cols[0].caption("Ajout rapide :")
+    cols[0].caption(t("Ajout rapide :"))
     for col, name in zip(cols[1:], missing):
         col.button(f"+ {fr(name)}", key=f"qa_{name}", on_click=quick_add, args=(name,),
                    width="stretch")
 
 info, clear = st.columns([4, 1], vertical_alignment="center")
-constraints = ([DIET_LABELS[diet].lower()] if diet else []) + \
-    [f"sans {ALLERGIES[a].lower()}" for a in allergies]
-info.caption(f"🧊 {len(fridge)} ingrédient(s)"
-             + (f" · selon ton profil : {', '.join(constraints)}" if constraints else "")
-             + ("" if user else " · 💡 crée un compte pour garder ton frigo d'une visite à "
-                "l'autre"))
+constraints = ([t(DIET_LABELS[diet]).lower()] if diet else []) + \
+    [t("sans {name}", name=t(ALLERGIES[a]).lower()) for a in allergies]
+info.caption(t("🧊 {n} ingrédient(s)", n=len(fridge))
+             + (t(" · selon ton profil : {constraints}", constraints=", ".join(constraints))
+                if constraints else "")
+             + ("" if user else t(" · 💡 crée un compte pour garder ton frigo d'une visite à "
+                                  "l'autre")))
 if fridge:
-    with clear.popover("🗑️ Vider", width="stretch"):
-        st.write("Retirer tous les ingrédients du frigo ?")
-        st.button("Oui, vider", on_click=empty_fridge, type="primary")
+    with clear.popover(t("🗑️ Vider"), width="stretch"):
+        st.write(t("Retirer tous les ingrédients du frigo ?"))
+        st.button(t("Oui, vider"), on_click=empty_fridge, type="primary")
 
 if len(fridge) < MIN_FRIDGE:
-    st.info(f"Ajoute au moins {MIN_FRIDGE} ingrédients pour voir ce que tu peux associer.")
+    st.info(t("Ajoute au moins {n} ingrédients pour voir ce que tu peux associer.", n=MIN_FRIDGE))
     st.stop()
 
 # Disliked items are never suggested, even if they are in the fridge.
@@ -118,22 +120,22 @@ usable = [f for f in fridge if f not in disliked]
 
 # -------------------------------------------------------------- what to do
 st.divider()
-st.subheader("🍳 Qu'est-ce que je peux faire avec ?")
-mode = st.radio("Mode", ["Autour d'un ingrédient", "Les meilleures associations de mon frigo"],
-                horizontal=True, label_visibility="collapsed",
-                captions=["Ex. « j'ai du saumon, je le mets avec quoi ? »",
-                          "On cherche les duos qui marchent le mieux dans ton frigo"])
+st.subheader(t("🍳 Qu'est-ce que je peux faire avec ?"))
+mode = st.radio(t("Mode"), ["Autour d'un ingrédient", "Les meilleures associations de mon frigo"],
+                horizontal=True, label_visibility="collapsed", format_func=t,
+                captions=[t("Ex. « j'ai du saumon, je le mets avec quoi ? »"),
+                          t("On cherche les duos qui marchent le mieux dans ton frigo")])
 
 if mode == "Autour d'un ingrédient":
     others = [v for v in load_vocab() if v not in set(fridge)]
     base = st.selectbox(
-        "Ingrédient de base", fridge + others, format_func=lambda n:
+        t("Ingrédient de base"), fridge + others, format_func=lambda n:
         f"🧊 {ingredient_label(n)}" if n in fridge else ingredient_label(n),
-        help="Un ingrédient de ton frigo (🧊) ou n'importe quel autre.")
-    if st.button("🔍 Trouver les associations", type="primary"):
+        help=t("Un ingrédient de ton frigo (🧊) ou n'importe quel autre."))
+    if st.button(t("🔍 Trouver les associations"), type="primary"):
         cands = [f for f in usable if f != base]
         try:
-            with st.spinner("On fouille ton frigo…"):
+            with st.spinner(t("On fouille ton frigo…")):
                 in_fridge = ask([base], cands, min(max(len(cands), 1), 50)) if cands else \
                     {"recommendations": [], "mock": None}
                 extra = ask([base], None, min(5 + len(fridge), 50))
@@ -145,13 +147,13 @@ if mode == "Autour d'un ingrédient":
                 "filtered": [c for c in cands if c not in returned],
             }
         except api_client.APIError:
-            st.error(API_DOWN_MSG)
+            st.error(t(API_DOWN_MSG))
 else:
-    if st.button("🔍 Trouver les meilleurs duos", type="primary"):
+    if st.button(t("🔍 Trouver les meilleurs duos"), type="primary"):
         pairs: dict[frozenset, dict] = {}
         mock = None
         try:
-            with st.spinner("On teste toutes les combinaisons de ton frigo…"):
+            with st.spinner(t("On teste toutes les combinaisons de ton frigo…")):
                 for item in usable:
                     cands = [f for f in usable if f != item]
                     body = ask([item], cands, min(len(cands), 50))
@@ -173,7 +175,7 @@ else:
             st.session_state.fridge_results = {"mode": "pairs", "pairs": ranked[:10],
                                                "star": star, "mock": mock}
         except api_client.APIError:
-            st.error(API_DOWN_MSG)
+            st.error(t(API_DOWN_MSG))
 
 # ------------------------------------------------------------------ results
 res = st.session_state.get("fridge_results")
@@ -187,12 +189,12 @@ def card(title: str, level: float, explanation: str, query: list[str], name: str
         pics = "".join(ingredient_img(p, 40) for p in pictured)
         left.markdown(f"{pics}**{title}**  \n<span style='opacity:.75;font-size:.9em'>💡 "
                       f"{explanation_fr(explanation)}</span>", unsafe_allow_html=True)
-        mid.progress(max(0.0, min(1.0, level)), text="Niveau d'accord")
+        mid.progress(max(0.0, min(1.0, level)), text=t("Niveau d'accord"))
         if (tuple(query), name) in liked:
-            right.caption("👍 noté")
+            right.caption(t("👍 noté"))
         else:
             right.button("👍", key=f"like_{'+'.join(query)}_{name}", on_click=like,
-                         args=(query, name), width="stretch", help="Bonne idée !")
+                         args=(query, name), width="stretch", help=t("Bonne idée !"))
 
 
 if res:
@@ -200,30 +202,30 @@ if res:
     mode_badge(res.get("mock"))
     if res["mode"] == "base":
         base, recs = res["base"], res["recs"]
-        st.subheader(f"Avec ce que tu as, {fr(base)} va le mieux avec :")
+        st.subheader(t("Avec ce que tu as, {name} va le mieux avec :", name=fr(base)))
         if not recs:
-            st.warning("Rien dans ton frigo ne s'accorde avec cet ingrédient en respectant "
-                       "tes contraintes. Regarde les idées à acheter juste en dessous.")
+            st.warning(t("Rien dans ton frigo ne s'accorde avec cet ingrédient en respectant "
+                         "tes contraintes. Regarde les idées à acheter juste en dessous."))
         best = recs[0]["score"] if recs else 1.0
         for i, r in enumerate(recs, 1):
             card(f"{i}. {fr(r['name']).capitalize()}", r["score"] / best if best > 0 else 0,
                  r["explanation"], [base], r["name"], [r["name"]])
         if res["filtered"]:
-            st.caption("Non proposés à cause de ton régime, de tes allergies ou de tes avis : "
+            st.caption(t("Non proposés à cause de ton régime, de tes allergies ou de tes avis : ")
                        + ", ".join(fr(f) for f in res["filtered"]) + ".")
         if res["to_buy"]:
-            st.markdown("#### 🛒 Pour aller plus loin, à acheter")
-            st.caption("Ces ingrédients iraient très bien aussi, mais tu ne les as pas.")
+            st.markdown(t("#### 🛒 Pour aller plus loin, à acheter"))
+            st.caption(t("Ces ingrédients iraient très bien aussi, mais tu ne les as pas."))
             st.markdown(" &nbsp; ".join(f"{ingredient_img(r['name'], 32)}**{fr(r['name'])}**"
                                         for r in res["to_buy"]), unsafe_allow_html=True)
     else:
         pairs = res["pairs"]
         if res["star"]:
-            st.success(f"⭐ **L'ingrédient star de ton frigo : {fr(res['star'])}**. C'est "
-                       "celui qui s'accorde avec le plus de choses que tu as.")
-        st.subheader("Les meilleurs duos avec ce que tu as")
+            st.success(t("⭐ **L'ingrédient star de ton frigo : {name}**. C'est celui qui s'accorde "
+                         "avec le plus de choses que tu as.", name=fr(res["star"])))
+        st.subheader(t("Les meilleurs duos avec ce que tu as"))
         if not pairs:
-            st.warning("Aucune association possible avec tes contraintes actuelles.")
+            st.warning(t("Aucune association possible avec tes contraintes actuelles."))
         best = pairs[0]["score"] if pairs else 1.0
         for i, p in enumerate(pairs, 1):
             card(f"{i}. {fr(p['a']).capitalize()} + {fr(p['b'])}",

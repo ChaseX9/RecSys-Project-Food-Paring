@@ -157,8 +157,9 @@ def login_as_guest() -> None:
 def logout() -> None:
     who = st.session_state.get("auth_user") or "invité"
     store().log("info", who, "Déconnexion")
-    # Drop everything tied to the previous user (results, feedback state, ...), keep the theme.
-    keep = {k: st.session_state[k] for k in ("dark_mode",) if k in st.session_state}
+    # Drop everything tied to the previous user (results, feedback state, ...), keep the
+    # theme and the language.
+    keep = {k: st.session_state[k] for k in ("dark_mode", "lang") if k in st.session_state}
     st.session_state.clear()
     st.session_state.update(keep)
 
