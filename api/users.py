@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 """
 
-# Created on the first start (empty table), shown on the login page. Demo only.
+# Created on the first start (empty table). Demo only (credentials in the README).
 DEMO_ACCOUNTS = [
     ("admin", "admin1234", dict(display_name="Admin Food Pairing", email="admin@foodpairing.local",
                                 role="admin")),

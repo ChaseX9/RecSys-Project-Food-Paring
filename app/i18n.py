@@ -145,10 +145,6 @@ EN = {
     "🟢 Serveur connecté · {ms} ms": "🟢 Server connected · {ms} ms",
     "🔴 Serveur de recommandations injoignable": "🔴 Recommendation server unreachable",
     # ---------------------------------------------------------------- login
-    "🛠️ Accès au panneau d'administration": "🛠️ Access to the admin panel",
-    "✨ Relié à un profil Food.com, frigo déjà rempli":
-        "✨ Linked to a Food.com profile, fridge already filled",
-    "🥗 Végétarienne, allergique aux fruits à coque": "🥗 Vegetarian, allergic to tree nuts",
     "Bonjour {name} ! 👋": "Hello {name}! 👋",
     "👋 Bienvenue !": "👋 Welcome!",
     "Connecte-toi pour retrouver **tes préférences** (régime, allergies…), **ton frigo** et "
@@ -157,7 +153,6 @@ EN = {
         "**your history**. You can also try the app without an account.",
     "Se connecter": "Log in",
     "Créer un compte": "Sign up",
-    "ex. demo": "e.g. demo",
     "ex. marie.d": "e.g. marie.d",
     "3 à 30 caractères : minuscules, chiffres, . _ -":
         "3 to 30 characters: lowercase letters, digits, . _ -",
@@ -170,12 +165,6 @@ EN = {
     "Continuer sans compte": "Continue without an account",
     "Tu pourras chercher des accords, mais pas enregistrer tes préférences.":
         "You can search for pairings, but not save your preferences.",
-    "🧪 Comptes de démonstration": "🧪 Demo accounts",
-    "Recopie un identifiant et son mot de passe, ou clique sur « Se connecter ». Ces comptes "
-    "sont créés au premier démarrage de l'API.":
-        "Copy a username and its password, or click “Log in”. These accounts are created on the "
-        "first start of the API.",
-    "Identifiant : `{u}`  \nMot de passe : `{p}`": "Username: `{u}`  \nPassword: `{p}`",
     # ---------------------------------------------------------------- pairings
     "Le modèle": "The model",
     "Recettes Food.com": "Food.com recipes",
