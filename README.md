@@ -1,8 +1,12 @@
 # Food Pairing — Ingredient Recommendation Engine
 
-**Group 5: Pull_request** 
+**Group 5: Pull_request** · ECE, ING5, Recommender Systems
 
-A recommender system that answers the everyday question *"I have X, what goes well with it?"*. The user enters one or more ingredients (e.g. `salmon`) and receives complementary ingredients that pair well together, filtered by the user's constraints (allergies, diet) and re-ranked by their tastes.
+A recommender system that answers the everyday question *"I have X, what goes well with it?"*. The user
+enters one or more ingredients (e.g. `salmon`) and receives complementary ingredients, filtered by their
+constraints (allergies, diet) and re-ranked by their tastes, each with a short explanation. It is a
+Streamlit app on top of a FastAPI back end that serves a graph model (LightGCN + NLGCL) trained on
+Food.com recipes.
 
 ## Team
 
@@ -12,16 +16,170 @@ A recommender system that answers the everyday question *"I have X, what goes we
 | Data Engineer | Mael Vaudin |
 | ML Engineer — Core | Jade Planterose |
 | ML Engineer — Ops | Thibault Rabbé |
-| Systems Engineer | - |
+| Systems Engineer | - (role shared by the team) |
+
+## Run the system locally (under 5 minutes)
+
+**Nothing to download or train:** the processed data (`data/processed/`) and the trained model
+(`artifacts/ingredient_embeddings.npy`) are in the repository. No GPU, no PyTorch, no Kaggle account.
+
+**Requirements:** Git and **Python 3.10 or newer** (tested with 3.12). Check your version first:
+`python3 --version` (macOS / Linux) or `python --version` (Windows). On macOS the system `python3`
+can be 3.9: use `python3.12` (or any 3.10+) in step 2.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/ChaseX9/RecSys-Project-Food-Paring.git
+cd RecSys-Project-Food-Paring
+```
+
+### 2. Create and activate a virtual environment
+
+macOS / Linux:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows (PowerShell):
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+```
+
+If PowerShell refuses to run the activation script, run
+`Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` and activate again.
+
+### 3. Install the dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Start the API and the app (one command)
+
+```bash
+python scripts/run_app.py
+```
+
+Wait for these two lines (the first start takes a few seconds):
+
+```text
+API ready: model = nlgcl
+  Open http://localhost:8501  (demo account: demo / demo1234)
+```
+
+`model = nlgcl` means the real trained model is served (not the mock).
+
+### 5. Open the app
+
+Open **http://localhost:8501**. The interface starts in French: switch to **EN** at the top left.
+Then either click **Continue without an account** or log in:
+
+| Account | Password | What it shows |
+|---|---|---|
+| `demo` | `demo1234` | linked to a Food.com profile, fridge already filled |
+| `camille` | `camille1234` | vegetarian, tree-nut allergy |
+| `admin` | `admin1234` | administration page |
+
+**Try it:** *Find pairings* → pick `salmon` and `lemon` → *Find pairings*. Click 👍 or 👎 on a suggestion
+and search again: the feedback applies immediately. Press `Ctrl+C` in the terminal to stop.
+
+The API documentation is at **http://127.0.0.1:8000/docs**.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `unexpected keyword argument 'width'` (or `'default'`) | An old Streamlit is being used: activate `.venv` (step 2) and run step 3 again |
+| `ModuleNotFoundError` | The virtual environment is not activated: step 2, then step 4 |
+| Port 8501 or 8000 already used | The script picks the next free port and prints the URL to open. To choose: `python scripts/run_app.py --api-port 8010 --ui-port 8510` |
+| `model = mock` | `artifacts/ingredient_embeddings.npy` is missing: restore it with `git checkout -- artifacts` |
+
+## Check that everything works (optional)
+
+All commands run from the repository root, with the virtual environment activated.
+
+```bash
+pytest                                   # 146 tests, about 3 to 8 minutes
+python scripts/demo_check.py             # replays the live demo, prints PASS / FAIL (about 30 s)
+python scripts/evaluate.py --embeddings artifacts/ingredient_embeddings.npy   # test metrics (about 1 min)
+python scripts/recommend.py salmon lemon --top-k 10                           # command line
+```
+
+## Re-train the model (optional)
+
+Not needed to run the system. Training uses PyTorch and takes about 20 minutes on a CPU.
+
+```bash
+pip install -r requirements-train.txt
+python scripts/train_nlgcl.py                 # settings in configs/model.yaml
+python scripts/train_nlgcl.py --device cuda   # on a GPU
+python scripts/train_nlgcl.py --no-val        # faster: no per-epoch validation, no early stopping
+python scripts/plot_training.py               # curves -> artifacts/training_curves.png
+```
+
+It overwrites `artifacts/ingredient_embeddings.npy` and `artifacts/train_meta.json`. Every epoch the model is
+validated on the **val split only** (BPR loss on ingredient pairs of val recipes the graph never saw, NDCG@10
+of the embedding alone and of the hybrid ranker). The best epoch on `val_emb_ndcg@10` is kept, and training
+stops after `patience` epochs without improvement.
+
+### Rebuild the data from scratch (optional)
+
+1. Download [Food.com - Recipes and Reviews](https://www.kaggle.com/datasets/irkaal/foodcom-recipes-and-reviews)
+   and put `recipes.csv` and `reviews.csv` in `data/raw/`.
+2. Run, in this order:
+
+```bash
+python scripts/download_flavorgraph.py    # chemistry files -> data/raw/flavorgraph/
+python scripts/build_data.py              # -> data/processed/
+python scripts/build_graph.py             # ingredient graph (NPMI + chemistry)
+python scripts/train_nlgcl.py             # needs requirements-train.txt
+```
+
+**Whenever `data/processed/ingredients_vocab.csv` changes, retrain**: an out-of-date model stops the API at
+startup with an explicit message, and `tests/test_artifacts.py` fails.
+
+## Results
+
+Test split, masked-ingredient completion on 2,342 recipes never seen in training:
+
+| Ranker | NDCG@10 | Recall@20 | HitRate@10 | MRR |
+|---|---:|---:|---:|---:|
+| Random | 0.001 | 0.007 | 0.004 | 0.001 |
+| Most popular | 0.191 | 0.419 | 0.437 | 0.188 |
+| Co-occurrence | 0.279 | 0.505 | 0.514 | 0.297 |
+| **Served hybrid ranker** | **0.317** | **0.564** | **0.576** | **0.331** |
+
+Protocol, ablations (NLGCL vs LightGCN) and their limits are detailed [below](#evaluation).
+
+## Project structure
+
+```text
+api/          FastAPI back end: recommendations, feedback, recipe ratings, accounts (SQLite)
+app/          Streamlit front end (talks to the model only through the API)
+src/data/     data pipeline and user profiles
+src/graph/    ingredient graph (NPMI + chemistry)
+src/models/   LightGCN encoder + NLGCL loss
+src/training/ training loop and validation
+src/ranking/  hybrid ranker, allergy / diet filters, feedback
+src/explain/  explanations
+src/eval/     evaluation protocol, metrics, baselines
+scripts/      command-line entry points
+configs/      all settings (YAML)
+tests/        automated tests
+data/         processed data (versioned); raw data goes in data/raw/ (not versioned)
+artifacts/    trained embeddings (versioned) and generated results
+```
 
 ## Approach
 
-- **Data:** Food.com recipes and user interactions (Kaggle). Optional chemical flavor relationships from FlavorDB / FlavorGraph.
-- **Model:** graph-based recommender inspired by NLGCL (Xu et al., RecSys '25): a LightGCN-style encoder trained with a BPR loss plus a contrastive loss that uses the naturally existing neighbor layers of the GNN as contrastive views, instead of noisy graph augmentations.
+- **Data:** Food.com recipes and user ratings (Kaggle), plus ingredient-compound links from FlavorGraph.
+- **Model:** graph-based recommender inspired by NLGCL (Xu et al., RecSys '25): a LightGCN encoder trained with a BPR loss plus a contrastive loss that uses the naturally existing neighbor layers of the GNN as contrastive views, instead of noisy graph augmentations.
 - **Hybrid ranking:** embedding similarity + co-occurrence in train recipes + chemical score, each min-max normalized per query, then hard constraint filtering (allergies, diet). Weights in `configs/model.yaml`, chosen on the val split.
-- **Personalization:** user preference vector built from highly rated recipes.
+- **Personalization:** user preference vector built from recipe ratings (1-5), updated by explicit feedback.
 - **Explanations:** short reasons for each recommendation (e.g. frequently paired together, shared aromatic compounds).
-
 
 ## Evaluation
 
@@ -139,36 +297,7 @@ Every explicit feedback sent to `POST /log_interaction` (with `recommended_ingre
 
 `/recommend` serves the trained model when `artifacts/ingredient_embeddings.npy` exists (`"mock": false`, check `GET /health`), and falls back to the mock otherwise or with `FOODPAIRING_MOCK=1`.
 
-## Quick start: run the app (about 5 minutes)
-
-Needs Python 3.10+ and git. Nothing to download or train: the processed data (`data/processed/`) and the trained model (`artifacts/ingredient_embeddings.npy`) are in the repo.
-
-1. Clone and create a virtual environment
-```bash
-git clone https://github.com/ChaseX9/RecSys-Project-Food-Paring.git
-cd RecSys-Project-Food-Paring
-
-# Windows (PowerShell)
-python -m venv .venv
-.\.venv\Scripts\activate
-
-# Linux or Mac
-python3 -m venv .venv
-source ./.venv/bin/activate
-```
-
-2. Install the dependencies (no PyTorch needed to run the app)
-```bash
-pip install -r requirements.txt
-```
-
-3. Start the API and the app with one command
-```bash
-python scripts/run_app.py
-```
-Open http://localhost:8501 and log in with `demo` / `demo1234` (or `admin` / `admin1234`, or "Continuer sans compte"). The terminal must show `API ready: model = nlgcl` (the real model, not the mock). `Ctrl+C` stops everything. If a port is already used by another program (another Streamlit app on 8501, an API on 8000...), the script takes the next free one and says so: open the URL it prints. To choose: `python scripts/run_app.py --api-port 8010 --ui-port 8510`.
-
-4. Check (optional): `pytest` (all tests, about 8 min) or `pytest tests/test_artifacts.py tests/test_api.py` (1 min).
+## Showcase and demo
 
 ### Showcase: share the app on the local network
 
@@ -199,48 +328,15 @@ python scripts/demo_check.py --api-url http://127.0.0.1:8000  # the API started 
 ```
 It needs neither a browser nor a network, so it is also the plan B if the app cannot be shown. It runs as a fresh `demo-check-xxxx` user and never touches real accounts.
 
-## Rebuild and retrain (optional)
-
-Only needed to change the data or the model. Install the training dependencies first:
-```bash
-pip install -r requirements-train.txt
-```
-
-1. Build ingredient graph (NPMI + chemical)
-```bash
-python scripts/build_graph.py
-```
-
-2. Train NLGCL embeddings (CPU, about 20 min)
-
-**Whenever `data/processed/ingredients_vocab.csv` changes, retrain and commit `artifacts/ingredient_embeddings.npy` and `artifacts/train_meta.json`**: an out-of-date model stops the API at startup with an explicit message, and `tests/test_artifacts.py` fails.
-```bash
-python scripts/train_nlgcl.py                 # settings from configs/model.yaml
-python scripts/train_nlgcl.py --device cuda   # GPU
-python scripts/train_nlgcl.py --no-val        # skip per-epoch validation (faster, no early stopping)
-```
-Every epoch the model is validated on the **val split only**: BPR loss on ingredient pairs of val recipes the graph never saw, and NDCG@10 of the embedding alone and of the hybrid ranker. The embeddings of the best epoch on `val_emb_ndcg@10` are kept, and training stops after `patience` epochs without improvement. Outputs: `artifacts/ingredient_embeddings.npy`, `artifacts/nlgcl_state.pt`, `artifacts/train_meta.json` (full history).
-
-Plot the training / validation curves:
-```bash
-python scripts/plot_training.py               # -> artifacts/training_curves.png
-```
-
-3. Recommend from the command line
-```bash
-python scripts/recommend.py salmon lemon --top-k 10
-python scripts/recommend.py chicken --allergies gluten dairy --diet vegetarian
-python scripts/recommend.py tomato basil --user-id 12345
-```
-
 ## Web interface
 
-`python scripts/run_app.py` starts both parts. To run them separately (two terminals, from the repo root):
+`python scripts/run_app.py` starts both parts. To run them separately (two terminals, from the repo root,
+virtual environment activated in both):
 ```bash
 uvicorn api.main:app                 # API on http://localhost:8000
 streamlit run app/streamlit_app.py   # UI on http://localhost:8501
 ```
-The UI (in French, dark/light toggle) only talks to the API (`FOODPAIRING_API_URL`, default
+The UI (French / English selector at the top left, dark/light toggle) only talks to the API (`FOODPAIRING_API_URL`, default
 `http://127.0.0.1:8000`). Pages: **Trouver des accords** (query + recommendations + feedback, with
 the user's diet/allergies applied), **Mon frigo** (pairings using only what the user has
 at home, via the `candidates` field of `/recommend`), **Mon historique**, **Mon profil**
@@ -293,4 +389,3 @@ title's head noun in the dish, so "Pumpkin Pie Dip" gets no pumpkin pie photo). 
 recipes get a 160 px photo of a similar dish (`app/images/recipes/`, mapping in
 `app/recipe_images.csv`). Every other recipe shows a 2x2 collage of its ingredient photos,
 main ingredients first and pantry staples (salt, flour, oil, ...) last.
-
