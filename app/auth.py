@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
-from api.users import DEMO_ACCOUNTS, MIN_PASSWORD  # noqa: F401  (shown on the login page)
+from api.users import DEMO_ACCOUNTS, MIN_PASSWORD  # noqa: F401  (used by the pages and tests)
 from app import api_client
 
 ROLES = {"user": "Utilisateur", "admin": "Administrateur"}

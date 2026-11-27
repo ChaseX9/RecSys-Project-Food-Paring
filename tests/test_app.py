@@ -288,13 +288,12 @@ def test_client_reports_unreachable_api():
     assert api_client.CALLS[0]["ok"] is False
 
 
-def test_demo_accounts_shown_with_one_click_login(api):
+def test_login_page_does_not_expose_demo_accounts(api):
     at = AppTest.from_file(ENTRY, default_timeout=30).run()
     shown = " ".join(m.value for m in at.markdown)
-    for username, password, _ in auth.DEMO_ACCOUNTS:
-        assert f"`{username}`" in shown and f"`{password}`" in shown
-    next(b for b in at.button if b.key == "demo_camille").click().run()
-    assert not at.exception and at.session_state.auth_user == "camille"
+    for _, password, _ in auth.DEMO_ACCOUNTS:
+        assert password not in shown
+    assert not [b for b in at.button if str(b.key).startswith("demo_")]
 
 
 def test_ingredient_images_photo_or_emoji():
